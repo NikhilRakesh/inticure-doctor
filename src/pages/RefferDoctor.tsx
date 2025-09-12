@@ -70,15 +70,6 @@ const RefferDoctor = () => {
     switch (currentStep) {
       case 0:
         return (
-          <SessionTypeSelector
-            setCouplesConsultation={(value: boolean) =>
-              setSessionPreferences((prev) => ({ ...prev, is_couple: value }))
-            }
-            nextStep={nextStep}
-          />
-        );
-      case 1:
-        return (
           <SpecializationSelector
             onSelect={(value: number) =>
               setSessionPreferences((prev) => ({
@@ -87,7 +78,16 @@ const RefferDoctor = () => {
               }))
             }
             selectedSpecialization={sessionPreferences.specialization_id}
-            is_couple={sessionPreferences.is_couple}
+            nextStep={nextStep}
+            nextNextStep={()=> setCurrentStep(currentStep + 2)}
+          />
+        );
+      case 1:
+        return (
+          <SessionTypeSelector
+            setCouplesConsultation={(value: boolean) =>
+              setSessionPreferences((prev) => ({ ...prev, is_couple: value }))
+            }
             nextStep={nextStep}
           />
         );
@@ -104,7 +104,14 @@ const RefferDoctor = () => {
           />
         );
       case 3:
-        return <DoctorList sessionPreferences={sessionPreferences} appointment_id={appointmentId} />;
+        return (
+          <DoctorList
+            sessionPreferences={sessionPreferences}
+            appointment_id={appointmentId}
+            selectedSpecialization={sessionPreferences.specialization_id}
+            is_couple={sessionPreferences.is_couple}
+          />
+        );
 
       default:
         return null;

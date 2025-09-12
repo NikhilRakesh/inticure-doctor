@@ -10,12 +10,18 @@ import DoctorCalendar from "./pages/DoctorCalendar";
 import DoctorRegistration from "./pages/DoctorRegistration";
 import ApplicationStatusBanner from "./components/Common/ApplicationStatusBanner";
 import RefferDoctor from "./pages/RefferDoctor";
+import DoctorPatientAssessment from "./pages/DoctorPatientAssessment";
+import FollowUp from "./pages/FollowUp";
 
 function App() {
   const router = createBrowserRouter([
     {
       path: "/login",
       element: <Login />,
+    },
+    {
+      path: "register",
+      element: <DoctorRegistration />,
     },
     {
       path: "/",
@@ -41,10 +47,7 @@ function App() {
               path: "calendar",
               element: <DoctorCalendar />,
             },
-            {
-              path: "register",
-              element: <DoctorRegistration />,
-            },
+
             {
               path: "profile-status/:did",
               element: <ApplicationStatusBanner />,
@@ -52,6 +55,14 @@ function App() {
             {
               path: "reffer-doctor",
               element: <RefferDoctor />,
+            },
+            {
+              path: "appointment",
+              element: <DoctorPatientAssessment />,
+            },
+            {
+              path: "follow-up",
+              element: <FollowUp />,
             },
           ],
         },

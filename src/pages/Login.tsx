@@ -92,7 +92,7 @@ const Login = () => {
       return;
     }
     const payload =
-      loginMethod === "email" ? { email_id: email } : { mobile_number: mobile };
+      loginMethod === "email" ? { email_id: email } : { phone_number: mobile };
     try {
       const response = await api.post("doctor/login/", payload);
       if (response.status === 200) {
@@ -129,7 +129,7 @@ const Login = () => {
     const payload =
       loginMethod === "email"
         ? { email_id: email, otp: enteredOtp }
-        : { mobile_number: mobile, otp: enteredOtp };
+        : { phone_number: mobile, otp: enteredOtp };
 
     try {
       const response = await api.post("doctor/verify_login/", payload);

@@ -27,6 +27,8 @@ interface SessionPreferences {
 interface DoctorListProbs {
   sessionPreferences: SessionPreferences;
   appointment_id: string | null;
+  selectedSpecialization: number;
+  is_couple: boolean;
 }
 
 interface Doctor {
@@ -48,6 +50,8 @@ interface DoctorMatchResponse {
 export const DoctorList = ({
   sessionPreferences,
   appointment_id,
+  selectedSpecialization,
+  is_couple,
 }: DoctorListProbs) => {
   const accessToken = useAuthStore((state) => state.accessToken);
 
@@ -64,7 +68,7 @@ export const DoctorList = ({
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   return (
-    <div className="bg-gray-50 min-h-screen p-6">
+    <div className=" min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -167,6 +171,8 @@ export const DoctorList = ({
           appointment_id={appointment_id}
           doctor={selectedDocor}
           sessionPreferences={sessionPreferences}
+          selectedSpecialization={selectedSpecialization}
+          is_couple={is_couple}
         />
       )}
     </div>

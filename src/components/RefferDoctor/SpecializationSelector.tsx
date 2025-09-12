@@ -7,39 +7,38 @@ import { api } from "../../lib/api";
 type Specializations = {
   specialization_id: number;
   specialization: string;
+  is_couple: boolean;
 };
 
 export const SpecializationSelector = ({
   onSelect,
   selectedSpecialization,
-  is_couple,
   nextStep,
+  nextNextStep,
 }: {
   onSelect: (spec: number) => void;
   selectedSpecialization: number;
-  is_couple: boolean;
   nextStep: () => void;
+  nextNextStep: () => void;
 }) => {
-  const [selected, setSelected] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Specializations | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
 
   const { data: specialties, isLoading } = useQuery({
     queryKey: ["specializations"],
     queryFn: () => {
       return api
-        .get<Specializations[]>(
-          `doctor/specializations/?is_couple=${is_couple}`
-        )
+        .get<Specializations[]>(`doctor/specializations/`)
         .then((res) => res.data);
     },
   });
 
-  const handleSelect = (id: number) => {
+  const handleSelect = (spec: Specializations) => {
     if (isAnimating) return;
     setIsAnimating(true);
-    setSelected(id);
+    setSelected(spec);
     setTimeout(() => {
-      onSelect(id);
+      onSelect(spec.specialization_id);
       setIsAnimating(false);
     }, 500);
   };
@@ -92,7 +91,7 @@ export const SpecializationSelector = ({
                     transition={{ delay: index * 0.05 }}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => handleSelect(spec.specialization_id)}
+                    onClick={() => handleSelect(spec)}
                     className={`relative p-5 rounded-lg cursor-pointer transition-all duration-200 ${
                       selectedSpecialization === spec.specialization_id
                         ? "bg-[#6d2b8a] text-white shadow-md"
@@ -102,7 +101,7 @@ export const SpecializationSelector = ({
                     <h3 className="font-medium text-lg">
                       {spec.specialization}
                     </h3>
-                    {selected === spec.specialization_id && (
+                    {selected?.specialization_id === spec.specialization_id && (
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
@@ -125,14 +124,16 @@ export const SpecializationSelector = ({
                     )}
                     <motion.div
                       className={`absolute bottom-0 left-0 h-1 rounded-b-lg ${
-                        selected === spec.specialization_id
+                        selected?.specialization_id === spec.specialization_id
                           ? "bg-white/50"
                           : "bg-[#6d2b8a]"
                       }`}
                       initial={{ width: 0 }}
                       animate={{
                         width:
-                          selected === spec.specialization_id ? "100%" : "0%",
+                          selected?.specialization_id === spec.specialization_id
+                            ? "100%"
+                            : "0%",
                       }}
                       transition={{ duration: 0.3 }}
                     />
@@ -149,7 +150,7 @@ export const SpecializationSelector = ({
         >
           <button
             disabled={isAnimating || selectedSpecialization === 0}
-            onClick={nextStep}
+            onClick={selected?.is_couple ? nextStep : nextNextStep}
             className={`w-full py-3 px-6 rounded-lg cursor-pointer text-white text-sm font-medium transition-all duration-300 
             bg-[#8a4baf] hover:bg-[#7a3a9f]
             ${isAnimating ? "opacity-50 cursor-not-allowed" : ""}`}

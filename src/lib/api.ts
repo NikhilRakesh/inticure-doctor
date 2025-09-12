@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "../features/Auth/authSlice";
 
 export const baseurl = "https://xbxm1951-8000.inc1.devtunnels.ms/";
-// export const baseurl = "https://api.inticure.com/";
+// export const baseurl = "https://dev.inticure.com/";
 
 export const api = axios.create({
   baseURL: `${baseurl}`,

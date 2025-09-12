@@ -1,21 +1,41 @@
-import { useState, Fragment, useEffect } from "react";
-import DatePicker from "react-datepicker";
-import { Dialog, Transition } from "@headlessui/react";
-import { Calendar, Clock, X, AlertCircle, Info, CalendarCheck } from "lucide-react";
+// DoctorCalendarGrid.tsx
+import React, { useEffect, useMemo, useState } from "react";
 import {
   addDays,
   format,
-  differenceInMinutes,
-  parse,
-  isWithinInterval,
   isAfter,
-  eachDayOfInterval,
+  isBefore,
+  isSameDay,
+  setHours,
+  startOfDay,
+  startOfMonth,
+  parseISO,
+  startOfWeek,
+  endOfWeek,
+  startOfHour,
 } from "date-fns";
-import "react-datepicker/dist/react-datepicker.css";
-import { useAuthStore } from "../features/Auth/authSlice";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import EventModal from "../components/Calendar/EventModal";
+import MiniCalendar from "../components/Calendar/MiniCalendar";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { token_api } from "../lib/api";
+import { useAuthStore } from "../features/Auth/authSlice";
 import { useToast } from "../context/ToastProvider";
+import axios from "axios";
+import EditWorkHoursModal from "../components/Calendar/EditWorkHoursModal";
+
+type TimeSlotApi = {
+  date: string;
+  start_time: string;
+  end_time: string;
+  start_date_time?: string;
+};
+
+type DraftSlot = {
+  start: Date;
+  end: Date;
+};
 
 interface DoctorSchedule {
   dates: string[];
@@ -23,460 +43,458 @@ interface DoctorSchedule {
   end_time: string;
 }
 
-interface TimeSlot {
-  date: string;
-  start_time: string;
-  end_time: string;
-}
+const COLORS = {
+  primary: "#6A1B78",
+  secondary: "#D41060",
+  dark: "#3A3A3B",
+  black: "#000000",
+  accent1: "#C2D510",
+  accent2: "#2C1879",
+  accent3: "#29791B",
+  lightBg: "#F0E8F2",
+  lightSecondary: "#FCE4EC",
+  white: "#FFFFFF",
+  gray50: "#F9FAFB",
+  gray100: "#F3F4F6",
+  gray200: "#E5E7EB",
+};
 
-const DoctorCalendar = () => {
-  const [selectedDate, setSelectedDate] = useState<Date | null>(
-    addDays(new Date(), 1)
-  );
-  const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
-  const [startTime, setStartTime] = useState<Date | null>(null);
-  const [tillDate, setTillDate] = useState<Date | null>(null);
-  const [endTime, setEndTime] = useState<Date | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const doctor_flag = useAuthStore((state) => state.doctorLevel);
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const formattedDate = selectedDate
-    ? format(selectedDate, "yyyy-MM-dd")
-    : null;
+type Range = {
+  start: Date;
+  end: Date;
+  date?: string;
+  start_date_time?: string;
+};
+
+const hours = Array.from({ length: 23 }, (_, i) => i);
+
+const DoctorCalendarGrid: React.FC = () => {
+  const now = new Date();
+  const [currentWeek, setCurrentWeek] = useState<Date>(now);
+  const [selectedDate, setSelectedDate] = useState<Date>(now);
+  const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(now));
+  const authToken = useAuthStore((s) => s.accessToken);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editWorkHours, setEditWorkHours] = useState(false);
+  const [modalRange, setModalRange] = useState<Range | null>(null);
+  const [editRange, setEditRange] = useState<Range | null>(null);
+  const [draftSlots, setDraftSlots] = useState<DraftSlot[]>([]);
+  const [dragStart, setDragStart] = useState<Date | null>(null);
+  const [dragEnd, setDragEnd] = useState<Date | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const { showToast } = useToast();
+  const [currentWeeks, setCurrentWeeks] = useState<Date[]>(() =>
+    Array.from({ length: 7 }, (_, i) => addDays(new Date(), i))
+  );
 
   useEffect(() => {
-    refetch();
-  }, [formattedDate]);
+    setCurrentWeeks((prevWeek) => getUpdatedWeekDays(selectedDate, prevWeek));
+  }, [selectedDate]);
 
-  const { data: selectedSlots = [], refetch } = useQuery<TimeSlot[]>({
-    queryKey: ["available-hours", formattedDate],
-    queryFn: () => {
-      if (!formattedDate) {
-        throw new Error("Invalid date selection");
-      }
-      const date = format(formattedDate, "yyyy-MM-dd");
-      return token_api(accessToken)
-        .get(`doctor/available_hours/?date=${date}`)
-        .then((res) => res.data);
-    },
-    enabled: !!formattedDate,
+  const { data: workingDays = [], refetch: refetch2 } = useQuery<string[]>({
+    queryKey: ["available_dates"],
+    queryFn: () =>
+      token_api(authToken)
+        .get("doctor/available_dates/")
+        .then((r) => r.data.available_dates),
   });
 
-  const isTimeSlotOverlapping = (newStart: Date, newEnd: Date) => {
-    return selectedSlots.some((slot) => {
-      const existingStart = parse(slot.start_time, "HH:mm", new Date());
-      const existingEnd = parse(slot.end_time, "HH:mm", new Date());
+  function formatDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, "0");
+    const day = `${date.getDate()}`.padStart(2, "0");
 
-      return (
-        isWithinInterval(newStart, {
-          start: existingStart,
-          end: existingEnd,
-        }) ||
-        isWithinInterval(newEnd, { start: existingStart, end: existingEnd }) ||
-        (newStart <= existingStart && newEnd >= existingEnd)
-      );
-    });
-  };
+    return `${year}-${month}-${day}`;
+  }
 
-  const handleTimeSelection = () => {
-    if (!startTime || !endTime) {
-      setError("Please select both start and end times");
-      return;
-    }
-
-    if (!selectedDate) {
-      setError("Please select a date");
-      return;
-    }
-
-    if (startTime >= endTime) {
-      setError("End time must be after start time");
-      return;
-    }
-
-    if (isTimeSlotOverlapping(startTime, endTime)) {
-      setError("This time slot overlaps with an existing slot");
-      return;
-    }
-
-    const duration = differenceInMinutes(endTime, startTime);
-
-    if (doctor_flag === "senior") {
-      if (duration < 60) {
-        setError("Senior doctors must select at least 60 minutes");
-        return;
-      }
-    } else {
-      if (duration < 15) {
-        setError("Junior doctors must select at least 15 minutes");
-        return;
-      }
-    }
-
-    let dates: string[] = [];
-
-    if (selectedDate) {
-      if (tillDate && isAfter(tillDate, selectedDate)) {
-        dates = eachDayOfInterval({
-          start: selectedDate,
-          end: tillDate,
-        }).map((d) => format(d, "yyyy-MM-dd"));
-      } else {
-        dates = [format(selectedDate, "yyyy-MM-dd")];
-      }
-    }
-    const start_time = format(startTime, "HH:mm");
-    const end_time = format(endTime, "HH:mm");
-
-    addJunDocSlot.mutate({ dates, start_time, end_time });
-  };
+  const { data: selectedSlots = [], refetch } = useQuery<TimeSlotApi[]>({
+    queryKey: ["available-hours", selectedDate],
+    queryFn: () =>
+      token_api(authToken)
+        .get(`doctor/available_hours/?date=${formatDate(selectedDate)}`)
+        .then((r) => r.data),
+    enabled: !!selectedDate,
+  });
 
   const addJunDocSlot = useMutation({
     mutationKey: ["doc_availability"],
     mutationFn: (slot: DoctorSchedule) =>
-      token_api(accessToken)
+      token_api(authToken)
         .post("doctor/available_hours/", slot)
         .then((res) => res.data),
     onSuccess: () => {
       showToast("Slot added successfully!", "success");
-      setStartTime(null);
-      setEndTime(null);
-      setError(null);
       refetch();
-      setIsSlotModalOpen(false);
+      refetch2();
+      setModalOpen(false);
     },
-    onError: () => {
-      showToast("Failed to add time slot", "error");
+    onError: (error) => {
+      if (axios.isAxiosError(error)) {
+        showToast(
+          error.response?.data?.error || "Something went wrong",
+          "error"
+        );
+      } else {
+        showToast("An unexpected error occurred", "error");
+      }
     },
   });
 
+  const editDrWorkHours = useMutation({
+    mutationKey: ["edit_available_hours"],
+    mutationFn: (slot: {
+      old_start_time?: string;
+      start_time: string;
+      end_time: string;
+      date?: string;
+    }) =>
+      token_api(authToken)
+        .post("doctor/edit_available_hours/", slot)
+        .then((res) => res.data),
+    onSuccess: () => {
+      showToast("Working hours updated successfully.", "success");
+      refetch();
+      refetch2();
+      setEditWorkHours(false);
+    },
+    onError: (error) => {
+      if (axios.isAxiosError(error)) {
+        showToast(
+          error.response?.data?.error || "Something went wrong",
+          "error"
+        );
+      } else {
+        showToast("An unexpected error occurred", "error");
+      }
+    },
+  });
+
+  function getUpdatedWeekDays(selectedDate: Date, currentWeek: Date[]): Date[] {
+    const isInCurrentWeek = currentWeek.some((day) =>
+      isSameDay(day, selectedDate)
+    );
+
+    if (isInCurrentWeek) {
+      return currentWeek;
+    }
+
+    // Else: selectedDate is outside the currentWeek, create a new one
+    return Array.from({ length: 7 }, (_, i) => addDays(selectedDate, i));
+  }
+
+  const weekDays = useMemo(() => {
+    return getUpdatedWeekDays(selectedDate, currentWeeks);
+  }, [selectedDate, currentWeek]);
+
+  const beginDrag = (day: Date, hour?: number) => {
+    if (isBefore(day, startOfDay(now))) return;
+    const start =
+      typeof hour === "number"
+        ? setHours(new Date(day), hour)
+        : startOfDay(day);
+    const rounded = startOfHour(start);
+
+    setDragStart(rounded);
+    setDragEnd(rounded);
+    setIsDragging(true);
+  };
+
+  const extendDrag = (day: Date, hour?: number) => {
+    if (!isDragging || !dragStart) return;
+    if (isBefore(day, startOfDay(now))) return;
+    const end =
+      typeof hour === "number"
+        ? setHours(new Date(day), hour + 1)
+        : startOfDay(day);
+    const rounded = startOfHour(end);
+    if (isBefore(end, dragStart)) {
+      setDragEnd(dragStart);
+      setDragStart(end);
+    } else {
+      setDragEnd(rounded);
+    }
+  };
+
+  const finishDrag = () => {
+    if (dragStart && dragEnd && isAfter(dragEnd, dragStart)) {
+      const newSlot = { start: dragStart, end: dragEnd };
+      setSelectedDate(dragStart);
+      setDraftSlots((p) => [...p, newSlot]);
+      setModalRange({ start: dragStart, end: dragEnd });
+      setModalOpen(true);
+    }
+    setIsDragging(false);
+    setDragStart(null);
+    setDragEnd(null);
+  };
+
+  const onMiniRangeSelect = (r: Range) => {
+    if (isBefore(r.start, startOfDay(now))) return;
+    setSelectedDate(r.start);
+    setCurrentWeek(r.start);
+    setCurrentMonth(startOfMonth(r.start));
+    setModalRange({ start: startOfDay(r.start), end: startOfDay(r.end) });
+  };
+
+  const handleModalSave = (payload: DoctorSchedule) => {
+    addJunDocSlot.mutate(payload);
+  };
+
+  const handleEditWorkHour = (
+    start: Date,
+    end: Date,
+    date: string,
+    start_date_time?: string
+  ) => {
+    const timeRange: Range = {
+      start,
+      end,
+      date,
+      start_date_time,
+    };
+    setEditRange(timeRange);
+    setEditWorkHours(true);
+  };
+
+  const handleSaveEditWorkHours = (payload: {
+    old_start_time?: string;
+    start_time: string;
+    end_time: string;
+    date?: string;
+  }) => {
+    editDrWorkHours.mutate(payload);
+  };
+
   return (
-    <div className="w-full min-h-screen p-6 bg-gradient-to-br from-[#f9f5ff] to-[#f0e5ff]">
-      <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden">
-        <div className="p-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-            <div>
-              <h1 className="text-3xl font-bold text-[#2c1e4a] mb-2">
-                Doctor Availability
-              </h1>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    doctor_flag === "senior"
-                      ? "bg-[#582768]/10 text-[#582768]"
-                      : "bg-[#d6769f]/10 text-[#d6769f]"
+    <div className="w-full min-h-screen p-6 bg-gradient-to-br from-[#faf7ff] to-[#f3ebff] flex gap-6">
+      {/* Sidebar */}
+      <motion.aside
+        initial={{ x: -20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className="w-80 bg-white rounded-2xl shadow-lg p-6 flex flex-col gap-6 border border-gray-100"
+      >
+        <div className="text-center">
+          <h2
+            className="text-xl font-semibold"
+            style={{ color: COLORS.primary }}
+          >
+            {format(now, "EEEE, MMM d, yyyy")}
+          </h2>
+        </div>
+
+        <MiniCalendar
+          currentMonth={currentMonth}
+          setCurrentMonth={setCurrentMonth}
+          selectedDate={selectedDate}
+          setSelectedDate={(d) => {
+            if (isBefore(d, startOfDay(now))) return;
+            setSelectedDate(d);
+            setCurrentWeek(d);
+            setCurrentMonth(startOfMonth(d));
+          }}
+          setCurrentWeek={setCurrentWeek}
+          workingDays={workingDays}
+          onRangeSelect={onMiniRangeSelect}
+        />
+      </motion.aside>
+
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+        className="flex-1 bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col border border-[#F3F4F6]"
+      >
+        {/* Header */}
+        <div className="p-6 flex items-center justify-between border-b border-[#E5E7EB] bg-[#F9FAFB]">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-[#F0E8F2]">
+              <CalendarIcon className="h-5 w-5 text-[#6A1B78]" />
+            </div>
+            <h1 className="text-2xl font-bold text-[#3A3A3B]">
+              Doctor Calendar
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium px-3 py-2 rounded-lg bg-[#F3F4F6]">
+              {format(startOfWeek(currentWeek), "MMM d")} -{" "}
+              {format(endOfWeek(currentWeek), "MMM d, yyyy")}
+            </span>
+          </div>
+        </div>
+
+        <div
+          className="flex-1 grid grid-cols-[80px_1fr] overflow-auto bg-white"
+          onMouseUp={finishDrag}
+          onTouchEnd={finishDrag}
+        >
+          <div className="border-r border-[#E5E7EB] bg-[#F9FAFB] py-2">
+            {hours.map((h, index) => (
+              <div
+                key={index}
+                className="h-16 text-xs flex justify-end pr-3 items-end pt-1 border-b border-[#E5E7EB] text-[#3A3A3B]"
+              >
+                {format(setHours(new Date(), h), "ha")}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 border-b border-[#E5E7EB] select-none">
+            {weekDays.map((day, index) => (
+              <div
+                key={index}
+                className={`border-l border-[#E5E7EB] cursor-pointer text-center py-3 font-semibold sticky top-0 z-10 transition-colors ${
+                  isSameDay(selectedDate, day) ? "bg-[#F0E8F2]" : "bg-[#F9FAFB]"
+                } ${
+                  isSameDay(selectedDate, day)
+                    ? "text-[#6A1B78]"
+                    : "text-[#3A3A3B]"
+                } border-b border-[#E5E7EB]`}
+                onClick={() => setSelectedDate(day)}
+              >
+                <div className="text-sm">{format(day, "EEE")}</div>
+                <div
+                  className={`text-lg ${
+                    isSameDay(selectedDate, day) ? "font-bold" : "font-medium"
                   }`}
                 >
-                  {doctor_flag === "senior" ? "Senior Doctor" : "Junior Doctor"}
-                </span>
-                <span className="text-gray-500 text-sm">
-                  {doctor_flag === "senior"
-                    ? "Minimum 1 hour slots (2 hours recommended for couple appointments)"
-                    : "Minimum 15 minute slots"}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={() => setIsSlotModalOpen(true)}
-              className="px-6 py-3 rounded-xl cursor-pointer text-white font-medium shadow-lg bg-gradient-to-r from-[#582768] to-[#8a4c7d] hover:from-[#6a3270] hover:to-[#7d3c6e] transition-all transform hover:scale-[1.02]"
-            >
-              Add Availability
-            </button>
-          </div>
-
-          <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm mb-8">
-            <div className="mb-4 flex items-center">
-              <Calendar className="h-5 w-5 text-[#582768] mr-2" />
-              <h2 className="text-lg font-semibold text-gray-800">
-                Selected Date
-              </h2>
-            </div>
-            <DatePicker
-              selected={selectedDate}
-              onChange={setSelectedDate}
-              minDate={addDays(new Date(), 1)}
-              dateFormat="MMMM d, yyyy"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#582768]/50"
-              calendarClassName="rounded-xl shadow-lg border border-gray-200"
-            />
-          </div>
-
-          {selectedSlots.length > 0 ? (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center mb-6">
-                <div className="p-2 bg-[#582768]/10 rounded-lg mr-3">
-                  <Clock className="h-6 w-6 text-[#582768]" />
+                  {format(day, "d")}
                 </div>
-                <h2 className="text-xl font-semibold text-gray-800">
-                  Your Availability
-                  <span className="ml-2 text-sm font-normal text-gray-500">
-                    ({selectedSlots.length} time blocks)
-                  </span>
-                </h2>
               </div>
+            ))}
 
-              <div className="space-y-3">
-                {selectedSlots.map((slot, index) => {
-                  const start = slot.start_time;
-                  const end = slot.end_time;
-                  const startDate = parse(start, "HH:mm", new Date());
-                  const endDate = parse(end, "HH:mm", new Date());
-                  const duration = differenceInMinutes(endDate, startDate);
+            {hours.map((h, index) =>
+              weekDays.map((day) => {
+                const cellStart = setHours(startOfDay(day), h);
+                const dayStr = format(day, "yyyy-MM-dd");
+                const serverBelow = selectedSlots?.filter(
+                  (s) =>
+                    s.date === dayStr &&
+                    parseInt(s.start_time.split(":")[0], 10) === h
+                );
 
-                  return (
-                    <div
-                      key={index}
-                      className="flex justify-between items-center bg-[#f9f0ff] p-4 rounded-xl border border-[#e9d4ff]"
-                    >
-                      <div>
-                        <span className="font-medium text-[#582768]">
-                          {format(startDate, "h:mm a")} -{" "}
-                          {format(endDate, "h:mm a")}
-                        </span>
-                        <span className="ml-3 text-sm text-gray-500">
-                          ({duration} minutes)
-                        </span>
-                        {doctor_flag === "senior" && duration < 120 && (
-                          <div className="mt-1 text-xs text-amber-600">
-                            Note: 2 hour slots recommended for couple
-                            appointments
+                const cellInDrag =
+                  dragStart &&
+                  dragEnd &&
+                  isSameDay(cellStart, dragStart) &&
+                  cellStart >= dragStart &&
+                  cellStart < dragEnd;
+
+                const inServerSlot = selectedSlots?.some((s) => {
+                  if (s.date !== dayStr) return false;
+                  const start = parseISO(`${s.date}T${s.start_time}`);
+                  const end = parseISO(`${s.date}T${s.end_time}`);
+                  return cellStart >= start && cellStart < end;
+                });
+
+                const isPast = isBefore(day, startOfDay(now));
+
+                return (
+                  <div
+                    key={`${format(day, "yyyy-MM-dd")}-h${h}`}
+                    className={`h-16 border-l border-b border-gray-300 relative transition-colors ${
+                      isPast
+                        ? "bg-[#F3F4F6] opacity-50 cursor-not-allowed"
+                        : "cursor-pointer hover:bg-[#F9FAFB]"
+                    } ${cellInDrag ? "bg-[#F0E8F2]" : ""}  ${
+                      inServerSlot ? "bg-[#F0E8F2]" : ""
+                    }`}
+                    onMouseDown={() =>
+                      !(isPast || inServerSlot) && beginDrag(day, h)
+                    }
+                    onMouseEnter={() =>
+                      !(isPast || inServerSlot) && extendDrag(day, h)
+                    }
+                    onTouchStart={() =>
+                      !(isPast || inServerSlot) && beginDrag(day, h)
+                    }
+                    data-cell-day={dayStr}
+                  >
+                    {serverBelow.map((slot) => {
+                      const s = parseISO(`${slot.date}T${slot.start_time}`);
+                      const e = parseISO(`${slot.date}T${slot.end_time}`);
+                      return (
+                        <motion.div
+                          key={index}
+                          className="absolute inset-1 rounded-xl text-white text-xs p-3 flex flex-col shadow-md border"
+                          style={{
+                            backgroundColor: "#6A1B78",
+                            borderColor: "rgba(255, 255, 255, 0.12)",
+                            boxShadow: "0 4px 14px rgba(106, 27, 120, 0.2)",
+                          }}
+                          onClick={() =>
+                            handleEditWorkHour(s, e, slot.date, slot.start_date_time)
+                          }
+                          initial={{ opacity: 0, scale: 0.96 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                        >
+                          <div className="font-medium mb-1 flex items-center">
+                            <div className="w-2 h-2 rounded-full bg-white/40 mr-2"></div>
+                            Working Hours
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                          <div className="text-xs opacity-90 font-light">
+                            {format(s, "hh:mm a")} - {format(e, "hh:mm a")}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
 
-              {doctor_flag === "senior" && (
-                <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-100">
-                  <p className="text-sm text-amber-800">
-                    For couple appointments, please ensure you have at least one
-                    2-hour time slot available in your schedule. Patients will
-                    only be able to book couple appointments in these extended
-                    slots.
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-              <div className="mx-auto w-16 h-16 bg-[#f9f0ff] rounded-full flex items-center justify-center mb-4">
-                <Info className="h-8 w-8 text-[#582768]" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-800 mb-2">
-                No availability set
-              </h3>
-              <p className="text-gray-500 mb-4">
-                Add your available time slots for{" "}
-                {selectedDate && format(selectedDate, "MMMM d, yyyy")}
-              </p>
-              {doctor_flag === "senior" && (
-                <div className="mb-4 p-3 bg-amber-50 rounded-lg border border-amber-100">
-                  <p className="text-sm text-amber-800">
-                    Remember to include some 2-hour slots if you want to accept
-                    couple appointments.
-                  </p>
-                </div>
-              )}
-              <button
-                onClick={() => setIsSlotModalOpen(true)}
-                className="px-6 py-2 bg-[#582768] cursor-pointer text-white rounded-lg hover:bg-[#6a3270] transition-colors"
-              >
-                Add Availability
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <Transition appear show={isSlotModalOpen} as={Fragment}>
-        <Dialog
-          as="div"
-          className="relative z-50"
-          onClose={() => setIsSlotModalOpen(false)}
-        >
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/50 backdrop-blur-md" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white shadow-[0_20px_50px_-10px_rgba(0,0,0,0.1)] transition-all border border-gray-100">
-                  {/* Header */}
-                  <div className="bg-gradient-to-r from-[#582768] to-[#8a3ab9] p-6">
-                    <div className="flex justify-between items-center">
-                      <Dialog.Title
-                        as="h3"
-                        className="text-xl font-semibold text-white"
-                      >
-                        Schedule Availability
-                      </Dialog.Title>
-                      <button
-                        onClick={() => setIsSlotModalOpen(false)}
-                        className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
-                        aria-label="Close"
-                      >
-                        <X className="h-5 w-5 text-white" />
-                      </button>
-                    </div>
-                    <p className="text-white/90 mt-1 text-sm">
-                      Add your available time slots for patient appointments
-                    </p>
+                    {/* draft slots */}
+                    {draftSlots
+                      .filter(
+                        (s) =>
+                          isSameDay(s.start, day) && s.start.getHours() === h
+                      )
+                      .map((s) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="absolute inset-1 rounded-lg text-xs p-2 flex flex-col border border-dashed text-[#6A1B78] border-[#6A1B7855] bg-[#6A1B7815]"
+                        >
+                          <div className="font-medium">New Slot</div>
+                          <div className="text-xs">
+                            {format(s.start, "hh:mm a")} –{" "}
+                            {format(s.end, "hh:mm a")}
+                          </div>
+                        </motion.div>
+                      ))}
                   </div>
-
-                  {/* Body */}
-                  <div className="p-6 space-y-5">
-                    {/* Date Range Section */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
-                          <Calendar className="h-4 w-4 mr-2 text-[#582768]" />
-                          Start Date
-                        </label>
-                        <DatePicker
-                          selected={selectedDate}
-                          onChange={setSelectedDate}
-                          minDate={addDays(new Date(), 1)}
-                          dateFormat="MMMM d, yyyy"
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#582768]/50 focus:border-[#582768]/30 transition-all"
-                          calendarClassName="shadow-lg border border-gray-200 rounded-lg"
-                        />
-                      </div>
-
-                      <div>
-                        <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
-                          <CalendarCheck className="h-4 w-4 mr-2 text-[#582768]" />
-                          End Date (Optional)
-                        </label>
-                        <DatePicker
-                          selected={tillDate}
-                          onChange={setTillDate}
-                          minDate={selectedDate ?? new Date()}
-                          dateFormat="MMMM d, yyyy"
-                          placeholderText="No end date"
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#582768]/50 focus:border-[#582768]/30 transition-all"
-                          calendarClassName="shadow-lg border border-gray-200 rounded-lg"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Time Range Section */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
-                          <Clock className="h-4 w-4 mr-2 text-[#582768]" />
-                          Start Time
-                        </label>
-                        <DatePicker
-                          selected={startTime}
-                          onChange={setStartTime}
-                          showTimeSelect
-                          showTimeSelectOnly
-                          timeIntervals={15}
-                          timeCaption="Time"
-                          dateFormat="h:mm aa"
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#582768]/50 focus:border-[#582768]/30 transition-all"
-                        />
-                      </div>
-
-                      <div>
-                        <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
-                          <Clock className="h-4 w-4 mr-2 text-[#582768]" />
-                          End Time
-                        </label>
-                        <DatePicker
-                          selected={endTime}
-                          onChange={setEndTime}
-                          showTimeSelect
-                          showTimeSelectOnly
-                          timeIntervals={15}
-                          timeCaption="Time"
-                          dateFormat="h:mm aa"
-                          className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#582768]/50 focus:border-[#582768]/30 transition-all"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Doctor Guidance */}
-                    <div className="bg-[#f8f5ff] p-4 rounded-lg border border-[#e9d8ff]">
-                      <div className="flex items-start">
-                        <Info className="h-5 w-5 text-[#582768] mt-0.5 mr-2 flex-shrink-0" />
-                        <div>
-                          <p className="text-sm font-medium text-[#582768] mb-1">
-                            {doctor_flag === "senior"
-                              ? "Senior Doctor Guidelines"
-                              : "Junior Doctor Guidelines"}
-                          </p>
-                          <p className="text-sm text-[#582768]/90">
-                            {doctor_flag === "senior" ? (
-                              <>
-                                Minimum 1-hour slots required. For couple
-                                appointments, we recommend 2-hour slots to
-                                ensure quality care.
-                              </>
-                            ) : (
-                              <>
-                                Minimum 15-minute slots required. Consider
-                                30-minute slots for comprehensive consultations.
-                              </>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {error && (
-                      <div className="bg-red-50 p-3 rounded-lg border border-red-100 flex items-start">
-                        <AlertCircle className="h-5 w-5 text-red-500 mr-2 mt-0.5" />
-                        <p className="text-sm text-red-600">{error}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Footer */}
-                  <div className="bg-gray-50 px-6 py-4 border-t border-gray-100 rounded-b-2xl flex justify-end space-x-3">
-                    <button
-                      type="button"
-                      onClick={() => setIsSlotModalOpen(false)}
-                      className="px-5 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors duration-200"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleTimeSelection}
-                      className="px-5 py-2.5 bg-gradient-to-r from-[#582768] to-[#8a3ab9] text-white rounded-lg font-medium shadow-sm hover:shadow-md transition-all duration-200 hover:from-[#4a1f5a] hover:to-[#6a3270]"
-                    >
-                      Confirm Availability
-                    </button>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
+                );
+              })
+            )}
           </div>
-        </Dialog>
-      </Transition>
+        </div>
+      </motion.section>
+
+      <AnimatePresence>
+        {modalOpen && (
+          <EventModal
+            initialRange={modalRange}
+            selectedSlots={selectedSlots}
+            onClose={() => {
+              setModalOpen(false);
+              setDraftSlots([]);
+            }}
+            onSave={handleModalSave}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {editWorkHours && editRange && (
+          <EditWorkHoursModal
+            initialRange={editRange}
+            onClose={() => {
+              setEditWorkHours(false);
+              setEditRange(null);
+            }}
+            onSave={handleSaveEditWorkHours}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-export default DoctorCalendar;
+export default DoctorCalendarGrid;

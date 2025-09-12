@@ -28,7 +28,7 @@ const Header = () => {
     },
     {
       label: "Appointments",
-      to: "/appointments",
+      to: "/appointments?tab=upcoming",
       icon: CalendarDays,
     },
     {
@@ -50,9 +50,9 @@ const Header = () => {
 
   return (
     <header>
-      <div className="flex items-center justify-between px-5">
+      <div className="flex items-center justify-between px-5 bg-gradient-to-br from-[#faf7ff] to-[#f3ebff]">
         <div className="w-16 cursor-pointer" onClick={() => navigate("/")}>
-          <img src="/inticure_logo_new.png" alt="" />
+          <img src="/inticure icon.png" className="p-2" alt="" />
         </div>
         <div className="bg-[#582768] rounded-xl">
           <nav className="flex  items-center ">

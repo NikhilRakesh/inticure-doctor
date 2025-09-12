@@ -47,7 +47,7 @@ export const SessionTypeSelector = ({
             transition={{ delay: 0.3 }}
             className="text-[#6d2b8a]/80"
           >
-            Choose the type of consultation you need
+            Choose the type of consultation patient need
           </motion.p>
         </div>
 
