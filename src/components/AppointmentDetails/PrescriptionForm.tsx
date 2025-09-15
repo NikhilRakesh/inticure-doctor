@@ -3,9 +3,10 @@ import { useToast } from "../../context/ToastProvider";
 import { useAuthStore } from "../../features/Auth/authSlice";
 import PrescriptionPreview from "../Appointment/PrescriptionPreview";
 import { motion } from "framer-motion";
-import { CalendarCheck, ClipboardEdit, FlaskConical } from "lucide-react";
+import { CalendarCheck, ClipboardEdit, FlaskConical, Plus } from "lucide-react";
 import { token_api } from "../../lib/api";
 import { FiPlus } from "react-icons/fi";
+import { useState } from "react";
 
 interface Appointment {
   appointment_id: number;
@@ -152,6 +153,14 @@ interface PatientNote {
   appointment: number;
 }
 
+interface FileItem {
+  id: number;
+  common_file: string;
+  file_name: string | null;
+  uploaded_on: string;
+  appointment: number;
+}
+
 interface PrescriptionData {
   medicine: PrescribedMedicine[];
   tests: PrescribedTest[];
@@ -162,7 +171,9 @@ interface PrescriptionData {
   observation_notes: Note[];
   questionnaire_answers: QuestionnaireQuestion[];
   extra_questions: ExtraQuestionItem[];
+  files: FileItem[];
   patient_details: Patient;
+  prescription_validity_added?: boolean;
 }
 
 interface FollowUpAdvice {
@@ -217,6 +228,7 @@ const PrescriptionForm = ({
 }: PrescriptionFormProbs) => {
   const accessToken = useAuthStore((state) => state.accessToken);
   const { showToast } = useToast();
+  const [validityDays, setValidityDays] = useState<number | "">("");
 
   const deactivate_medicine = useMutation({
     mutationKey: ["deactivate_medicine"],
@@ -234,6 +246,25 @@ const PrescriptionForm = ({
     },
     onError: () => {
       showToast("Failed to deactivate medicine. Try again", "error");
+    },
+  });
+
+  const add_prescription_validity = useMutation({
+    mutationKey: ["add_prescription_validity"],
+    mutationFn: (days: number) =>
+      token_api(accessToken)
+        .post("doctor/add_prescription_validity/", {
+          valid_till_days: days,
+          appointment_id: data.appointment.appointment_id,
+        })
+        .then((res) => res.data),
+    onSuccess: () => {
+      showToast("Validity added successfully.", "success");
+      refetchPrescription();
+      setNotes("");
+    },
+    onError: () => {
+      showToast("Failed to add validity. Try again", "error");
     },
   });
 
@@ -396,6 +427,52 @@ const PrescriptionForm = ({
             </div>
           </div>
         )}
+
+        {data.is_prescription_allowed &&
+          !prescriptionData?.prescription_validity_added && (
+            <div className="w-full max-w-md mt-4">
+              <label
+                htmlFor="prescription_validity"
+                className="text-sm font-medium text-gray-700 mb-2 flex items-center"
+              >
+                <CalendarCheck className="h-4 w-4 mr-2 text-indigo-500" />
+                Prescription Validity
+              </label>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  id="prescription_validity"
+                  type="number"
+                  placeholder="Eg. 90 days"
+                  value={validityDays}
+                  onChange={(e) =>
+                    setValidityDays(
+                      e.target.value === "" ? "" : Number(e.target.value)
+                    )
+                  }
+                  className="flex-1 border rounded-lg no-arrows border-gray-200 shadow-sm outline-0 focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-4 py-2.5 transition-all text-gray-800 placeholder-gray-400"
+                />
+                <button
+                  onClick={() => {
+                    if (validityDays && validityDays > 0) {
+                      add_prescription_validity.mutate(validityDays);
+                    } else {
+                      showToast("Enter a valid number of days", "error");
+                    }
+                  }}
+                  type="button"
+                  className="inline-flex cursor-pointer items-center justify-center px-4 py-2.5 rounded-lg bg-[#582768] text-white text-sm font-medium shadow-sm  transition"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add
+                </button>
+              </div>
+
+              <p className="mt-2 text-xs text-gray-500">
+                Specify how long the prescription remains valid.
+              </p>
+            </div>
+          )}
 
         {data.is_prescription_allowed && (
           <>

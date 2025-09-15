@@ -55,8 +55,6 @@ export default function CalendarDatePicker({
       setSelectedSlot(null);
       refetch();
     } else if (addNewHours) {
-      console.log("here");
-
       addNewHours(isoDate);
     }
   };

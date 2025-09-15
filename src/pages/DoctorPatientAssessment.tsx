@@ -208,6 +208,14 @@ interface PatientNote {
   appointment: number;
 }
 
+interface FileItem {
+  id: number;
+  common_file: string;
+  file_name: string | null;
+  uploaded_on: string;
+  appointment: number;
+}
+
 interface PrescriptionData {
   medicine: PrescribedMedicine[];
   tests: PrescribedTest[];
@@ -218,7 +226,9 @@ interface PrescriptionData {
   observation_notes: Note[];
   questionnaire_answers: QuestionnaireQuestion[];
   extra_questions: ExtraQuestionItem[];
+  files: FileItem[];
   patient_details: Patient;
+  prescription_validity_added?: boolean;
 }
 
 interface DetailCardProps {
@@ -331,6 +341,8 @@ const DoctorPatientAssessment = () => {
         return token_api(accessToken)
           .get(`doctor/prescriptions/?customer=${selectedPatientId}`)
           .then((res) => {
+            console.log(res.data);
+
             return res.data;
           });
       },

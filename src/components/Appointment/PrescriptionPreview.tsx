@@ -8,8 +8,10 @@ import {
   Clock,
   CheckCircle,
   FileText,
+  ExternalLink,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { baseurl } from "../../lib/api";
 
 interface FollowupNote {
   id: number;
@@ -55,12 +57,22 @@ interface PatientNote {
   appointment: number;
 }
 
+interface FileItem {
+  id: number;
+  common_file: string;
+  file_name: string | null;
+  uploaded_on: string;
+  appointment: number;
+}
+
 interface MedicalData {
   tests: Test[];
   medicine: Medicine[];
   patient_notes: PatientNote[];
   patient_first_name: string;
   patient_last_name: string;
+  files: FileItem[];
+
   followup_advices: FollowupNote[];
 }
 
@@ -107,7 +119,7 @@ const PrescriptionPreview: React.FC<{
       </div>
 
       {/* Wrapper Card */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200  shadow-sm overflow-hidden">
         {/* Medications Section */}
         <div className="p-6 border-b border-gray-200">
           <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -137,7 +149,11 @@ const PrescriptionPreview: React.FC<{
                     ? "border-indigo-600 text-indigo-700"
                     : "border-transparent text-gray-500 hover:text-gray-700"
                 }
-                ${inactiveMeds?.length === 0 ? "opacity-50 cursor-not-allowed" : ""}
+                ${
+                  inactiveMeds?.length === 0
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }
               `}
             >
               Past {inactiveMeds?.length > 0 && `(${inactiveMeds.length})`}
@@ -146,12 +162,21 @@ const PrescriptionPreview: React.FC<{
 
           {/* Active Meds */}
           {activeMeds?.length > 0 && showActiveMeds && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid gap-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="grid gap-4"
+            >
               {activeMeds.map((med) => (
-                <div key={med.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div
+                  key={med.id}
+                  className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                >
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h5 className="font-semibold text-gray-900">{med.medicine_name}</h5>
+                      <h5 className="font-semibold text-gray-900">
+                        {med.medicine_name}
+                      </h5>
                       <p className="text-gray-600 text-sm">{med.strength}</p>
                     </div>
                     <button
@@ -169,11 +194,13 @@ const PrescriptionPreview: React.FC<{
                   </div>
                   {med.instruction && (
                     <p className="mt-2 text-sm text-gray-700">
-                      <span className="font-medium">Instruction:</span> {med.instruction}
+                      <span className="font-medium">Instruction:</span>{" "}
+                      {med.instruction}
                     </p>
                   )}
                   <p className="mt-2 text-xs text-gray-500 flex items-center gap-1">
-                    <User className="h-3 w-3" /> Doctor #{med.doctor} • {formatDateTime(med.created_at)}
+                    <User className="h-3 w-3" /> Doctor #{med.doctor} •{" "}
+                    {formatDateTime(med.created_at)}
                   </p>
                 </div>
               ))}
@@ -182,12 +209,21 @@ const PrescriptionPreview: React.FC<{
 
           {/* Past Meds */}
           {inactiveMeds?.length > 0 && !showActiveMeds && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid gap-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="grid gap-4"
+            >
               {inactiveMeds.map((med) => (
-                <div key={med.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div
+                  key={med.id}
+                  className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                >
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h5 className="font-semibold text-gray-800">{med.medicine_name}</h5>
+                      <h5 className="font-semibold text-gray-800">
+                        {med.medicine_name}
+                      </h5>
                       <p className="text-gray-600 text-sm">{med.strength}</p>
                     </div>
                     <span className="flex items-center gap-1 text-xs px-2 py-1 bg-gray-200 text-gray-600 rounded-full">
@@ -201,11 +237,13 @@ const PrescriptionPreview: React.FC<{
                   </div>
                   {med.instruction && (
                     <p className="mt-2 text-sm text-gray-600">
-                      <span className="font-medium">Instruction:</span> {med.instruction}
+                      <span className="font-medium">Instruction:</span>{" "}
+                      {med.instruction}
                     </p>
                   )}
                   <p className="mt-2 text-xs text-gray-400 flex items-center gap-1">
-                    <User className="h-3 w-3" /> Doctor #{med.doctor} • {formatDateTime(med.created_at)}
+                    <User className="h-3 w-3" /> Doctor #{med.doctor} •{" "}
+                    {formatDateTime(med.created_at)}
                   </p>
                 </div>
               ))}
@@ -215,23 +253,78 @@ const PrescriptionPreview: React.FC<{
 
         {/* Tests */}
         {prescription.tests?.length > 0 && (
-          <Section title="Recommended Tests" icon={<FlaskConical className="h-5 w-5 text-indigo-600" />}>
+          <Section
+            title="Recommended Tests"
+            icon={<FlaskConical className="h-5 w-5  text-indigo-600" />}
+          >
             {prescription.tests.map((test) => (
-              <div key={test.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div
+                key={test.id}
+                className="bg-gray-50 p-4 rounded-lg border border-gray-200"
+              >
                 <h5 className="font-medium text-gray-900">{test.test_name}</h5>
                 {test.instruction && (
-                  <p className="text-sm text-gray-600 mt-1">{test.instruction}</p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {test.instruction}
+                  </p>
                 )}
               </div>
             ))}
           </Section>
         )}
 
+        <div className="space-y-4 py-5">
+          {prescription.files.map((file, index) => {
+            const displayName = file.file_name ?? `File ${index + 1}`;
+            const formattedDate = new Date(
+              file.uploaded_on
+            ).toLocaleDateString();
+
+            return (
+              <div
+                key={file.id}
+                className="flex items-center justify-between rounded-xl border border-gray-200 bg-white shadow-sm p-4 hover:shadow-md transition"
+              >
+                {/* Left side: File info */}
+                <div className="flex items-start space-x-3">
+                  <div className="bg-blue-50 p-2 rounded-lg">
+                    <FileText className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{displayName}</p>
+                    <div className="flex items-center text-sm text-gray-500 mt-1">
+                      <Calendar className="w-4 h-4 mr-1" />
+                      {formattedDate}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right side: View button */}
+                <a
+                  href={baseurl + file.common_file}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition"
+                >
+                  View
+                  <ExternalLink className="w-4 h-4 ml-1" />
+                </a>
+              </div>
+            );
+          })}
+        </div>
+
         {/* Follow-up */}
         {prescription.followup_advices?.length > 0 && (
-          <Section title="Follow-up Instructions" icon={<FileText className="h-5 w-5 text-indigo-600" />}>
+          <Section
+            title="Follow-up Instructions"
+            icon={<FileText className="h-5 w-5 text-indigo-600" />}
+          >
             {prescription.followup_advices.map((note) => (
-              <div key={note.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div
+                key={note.id}
+                className="bg-gray-50 p-4 rounded-lg border border-gray-200"
+              >
                 <p className="text-gray-700">{note.note}</p>
               </div>
             ))}
@@ -240,9 +333,15 @@ const PrescriptionPreview: React.FC<{
 
         {/* Patient Notes */}
         {prescription.patient_notes?.length > 0 && (
-          <Section title="Patient Notes" icon={<MessageCircle className="h-5 w-5 text-indigo-600" />}>
+          <Section
+            title="Patient Notes"
+            icon={<MessageCircle className="h-5 w-5 text-indigo-600" />}
+          >
             {prescription.patient_notes.map((note) => (
-              <div key={note.id} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div
+                key={note.id}
+                className="bg-gray-50 p-4 rounded-lg border border-gray-200"
+              >
                 <p className="text-gray-700">{note.note}</p>
               </div>
             ))}
@@ -254,11 +353,11 @@ const PrescriptionPreview: React.FC<{
 };
 
 /* Helper reusable card section */
-const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({
-  title,
-  icon,
-  children,
-}) => (
+const Section: React.FC<{
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}> = ({ title, icon, children }) => (
   <div className="p-6 border-t border-gray-200">
     <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
       {icon}
@@ -269,7 +368,10 @@ const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.
 );
 
 /* InfoBox for dosage/frequency/duration */
-const InfoBox: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+const InfoBox: React.FC<{ label: string; value: string }> = ({
+  label,
+  value,
+}) => (
   <div className="bg-white p-3 rounded-lg border border-gray-200">
     <span className="text-gray-500 block text-xs mb-1">{label}</span>
     <span className="font-medium text-gray-900">{value}</span>

@@ -7,7 +7,13 @@ import {
   Stethoscope,
   ClipboardList,
 } from "lucide-react";
-import type { FieldErrors, SubmitHandler, UseFormHandleSubmit, UseFormRegister } from "react-hook-form";
+import type {
+  FieldErrors,
+  SubmitHandler,
+  UseFormHandleSubmit,
+  UseFormRegister,
+} from "react-hook-form";
+import LifestyleForm from "./LifestyleForm";
 
 type FormData = {
   height: string;
@@ -171,7 +177,7 @@ const PatientAssessmentForm: React.FC<PatientAssessmentFormProps> = ({
 
             <div className="space-y-5 flex w-full gap-6">
               {/* Height Input with Unit Selection */}
-              <div className="w-full">
+              <div className="flex-1 max-w-xs">
                 <label
                   htmlFor="height"
                   className="text-sm font-medium text-gray-700 mb-2 flex items-center"
@@ -183,7 +189,7 @@ const PatientAssessmentForm: React.FC<PatientAssessmentFormProps> = ({
                   <input
                     id="height"
                     type="number"
-                    className={`block w-full no-arrows border rounded-lg border-gray-200 shadow-sm outline-0 focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-4 py-2.5 transition-all ${
+                    className={`block w-24 no-arrows border rounded-lg border-gray-200 shadow-sm outline-0 focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-3 py-2 transition-all ${
                       errors.height
                         ? "border-red-300 focus:border-red-300 focus:ring-red-200/50"
                         : ""
@@ -193,10 +199,10 @@ const PatientAssessmentForm: React.FC<PatientAssessmentFormProps> = ({
                   <select
                     {...register("height_unit", { required: true })}
                     defaultValue="cm"
-                    className="block w-24 border rounded-lg outline-0 border-gray-200 shadow-sm  focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-2 py-2.5 transition-all"
+                    className="block w-20 border rounded-lg outline-0 border-gray-200 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-2 py-2 transition-all"
                   >
                     <option value="cm">cm</option>
-                    <option value="ft">feet</option>
+                    <option value="ft">ft</option>
                   </select>
                 </div>
                 {errors.height && (
@@ -208,7 +214,7 @@ const PatientAssessmentForm: React.FC<PatientAssessmentFormProps> = ({
               </div>
 
               {/* Weight Input with Unit Selection */}
-              <div className="w-full">
+              <div className="flex-1 max-w-xs">
                 <label
                   htmlFor="weight"
                   className="text-sm font-medium text-gray-700 mb-2 flex items-center"
@@ -220,7 +226,7 @@ const PatientAssessmentForm: React.FC<PatientAssessmentFormProps> = ({
                   <input
                     id="weight"
                     type="number"
-                    className={`block w-full border no-arrows rounded-lg border-gray-200 shadow-sm outline-0 focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-4 py-2.5 transition-all ${
+                    className={`block w-24 no-arrows border rounded-lg border-gray-200 shadow-sm outline-0 focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-3 py-2 transition-all ${
                       errors.weight
                         ? "border-red-300 focus:border-red-300 focus:ring-red-200/50"
                         : ""
@@ -230,10 +236,10 @@ const PatientAssessmentForm: React.FC<PatientAssessmentFormProps> = ({
                   <select
                     {...register("weight_unit", { required: true })}
                     defaultValue="kg"
-                    className="block w-24 border rounded-lg border-gray-200 outline-0 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-2 py-2.5 transition-all"
+                    className="block w-20 border rounded-lg border-gray-200 outline-0 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-2 py-2 transition-all"
                   >
                     <option value="kg">kg</option>
-                    <option value="lbs">pounds</option>
+                    <option value="lbs">lbs</option>
                   </select>
                 </div>
                 {errors.weight && (
@@ -245,7 +251,7 @@ const PatientAssessmentForm: React.FC<PatientAssessmentFormProps> = ({
               </div>
             </div>
           </div>
-
+          <LifestyleForm />
           {/* Medical History Section */}
           <div className="bg-white rounded-xl shadow-md mt-5 border border-gray-200 p-6 transition-all hover:shadow-[0_6px_24px_rgba(79,70,229,0.1)]">
             <div className="flex items-center gap-3 mb-6">
