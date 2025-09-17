@@ -6,11 +6,11 @@ import {
   ExternalLink,
   MessageSquare,
 } from "lucide-react";
-import { baseurl, get_api_form } from "../../lib/api";
+import { baseurl, get_api_form, token_api } from "../../lib/api";
 import { useToast } from "../../context/ToastProvider";
 import { useAuthStore } from "../../features/Auth/authSlice";
 import axios from "axios";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 interface FileItem {
   id: number;
@@ -49,7 +49,7 @@ export default function PatientFileUploader({
         .then((res) => res.data),
     onSuccess: () => {
       showToast("File has been uploaded successfully.", "success");
-      // refetch();
+      refetch();
       setSelectedFile(null);
       setNote("");
     },
@@ -70,8 +70,19 @@ export default function PatientFileUploader({
     uploadFiles.mutate(selectedFile);
   };
 
+  const { data, refetch } = useQuery<FileItem[]>({
+    queryKey: ["patient_files"],
+    queryFn: () => {
+      return token_api(accessToken)
+        .get(`doctor/patient_files/?appointment_id=${aid}`)
+        .then((res) => {
+          return res.data;
+        });
+    },
+  });
+
   const renderFileCard = (file: FileItem) => {
-    const displayName = file.file_name ?? `File `;
+    const displayName = file.file_name || `File`;
     const formattedDate = new Date(file.uploaded_on).toLocaleDateString();
     return (
       <div
@@ -88,11 +99,7 @@ export default function PatientFileUploader({
               <Calendar className="w-4 h-4 mr-1" />
               {formattedDate}
             </div>
-            {/* {file.note && (
-            <p className="mt-2 text-sm text-gray-700 border-l-2 border-indigo-400 pl-2">
-              {file.note}
-            </p>
-          )} */}
+          
           </div>
         </div>
 
@@ -108,17 +115,6 @@ export default function PatientFileUploader({
       </div>
     );
   };
-
-  // const { data, refetch } = useQuery({
-  //   queryKey: ["patient_files"],
-  //   queryFn: () => {
-  //     return token_api(accessToken)
-  //       .get(`doctor/patient_files/?appointment_id=${aid}`)
-  //       .then((res) => {
-  //         return res.data;
-  //       });
-  //   },
-  // });
 
   return (
     <div className="w-full p-5 space-y-6">
@@ -215,15 +211,15 @@ export default function PatientFileUploader({
           </div>
 
           {/* Doctor Uploaded Files */}
-          {/* <div className="space-y-4">
-            {files.length > 0 ? (
-              files.map(renderFileCard)
+          <div className="space-y-4">
+            {data && data?.length > 0 ? (
+              data?.map(renderFileCard)
             ) : (
               <p className="text-sm text-gray-500 text-center">
                 No files uploaded yet.
               </p>
             )}
-          </div> */}
+          </div>
         </>
       )}
 

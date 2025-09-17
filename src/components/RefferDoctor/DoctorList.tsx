@@ -35,6 +35,7 @@ interface Doctor {
   id: number;
   name: string;
   gender: string;
+  bio: string;
   flag: string;
   profile_pic: string;
   specializations: string[];
@@ -70,36 +71,24 @@ export const DoctorList = ({
   return (
     <div className=" min-h-screen p-6">
       <div className="max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-2xl md:text-3xl font-medium text-gray-900">
-            Our Specialist Doctors
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Highly qualified professionals ready to assist you
-          </p>
-        </motion.div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {doctors &&
-            doctors?.available_doctors?.length !== 0 &&
-            doctors?.available_doctors?.map((doctor) => (
+            doctors?.available_doctors?.length > 0 &&
+            doctors.available_doctors.map((doctor) => (
               <motion.div
                 key={doctor.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
                 whileHover={{
-                  y: -5,
-                  boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                  y: -6,
+                  boxShadow: "0 12px 28px -8px rgba(93, 45, 134, 0.25)",
                 }}
-                className="bg-white rounded-xl overflow-hidden border border-gray-100 transition-all shadow-md"
+                className="bg-white rounded-2xl overflow-hidden border border-gray-300 shadow-md transition-all"
               >
-                <div className="p-5 flex items-center gap-4 border-b border-gray-100">
-                  <div className="relative h-20 w-20 min-w-[80px] rounded-full overflow-hidden border-2 border-[#6d2b8a]">
+                {/* Doctor Header */}
+                <div className="p-6 flex items-center gap-4 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-indigo-50">
+                  <div className="relative h-20 w-20 min-w-[80px] rounded-full overflow-hidden border-4 border-white shadow-md ring-2 ring-[#6d2b8a]/30">
                     <img
                       src={baseurl + doctor.profile_pic}
                       alt={doctor.name}
@@ -108,36 +97,48 @@ export const DoctorList = ({
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h2 className="text-lg font-semibold text-gray-900 truncate">
+                    <h2 className="text-lg font-semibold text-gray-900 truncate flex items-center gap-2">
                       {doctor.name}
+                      <span className="inline-block w-2.5 h-2.5 bg-green-500 rounded-full"></span>
                     </h2>
-                    <p className="text-[#6d2b8a] text-sm font-medium truncate">
-                      {doctor.specializations.join(", ")}
-                    </p>
-                    <div className="flex items-center mt-1">
-                      <span className="text-gray-600 text-sm">
-                        {doctor.flag}
-                      </span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {doctor.specializations.map((spec: string, i: number) => (
+                        <span
+                          key={i}
+                          className="px-2 py-0.5 bg-purple-100 text-[#6d2b8a] rounded-md text-xs font-medium"
+                        >
+                          {spec}
+                        </span>
+                      ))}
                     </div>
+                    <p className="text-sm text-gray-500 mt-1">{doctor.flag}</p>
                   </div>
                 </div>
 
-                <div className="p-5">
-                  <div className="flex items-center justify-between mb-3">
+                {/* Doctor Details */}
+                <div className="p-6 space-y-4">
+                  {/* Gender */}
+                  <div className="flex justify-between items-center">
                     <span className="px-3 py-1 rounded-full bg-[#f3e8ff] text-[#6d2b8a] text-xs font-medium">
                       {doctor.gender}
                     </span>
                   </div>
 
-                  <div className="mb-4">
-                    <h3 className="text-xs font-medium text-gray-500 mb-2">
+                  {/* Bio */}
+                  <div className="text-sm text-gray-700 line-clamp-3">
+                    {doctor.bio}
+                  </div>
+
+                  {/* Languages */}
+                  <div>
+                    <h3 className="text-xs font-medium text-gray-500 mb-2 tracking-wide">
                       LANGUAGES
                     </h3>
                     <div className="flex flex-wrap gap-2">
-                      {doctor.languages.map((language) => (
+                      {doctor.languages.map((language: string, i: number) => (
                         <span
-                          key={language}
-                          className="px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full text-xs"
+                          key={i}
+                          className="px-2.5 py-1 bg-gray-100 text-gray-700 rounded-full text-xs"
                         >
                           {language}
                         </span>
@@ -145,6 +146,7 @@ export const DoctorList = ({
                     </div>
                   </div>
 
+                  {/* Book Button */}
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -152,7 +154,7 @@ export const DoctorList = ({
                       setSelectedDoctor(doctor);
                       setIsOpen(true);
                     }}
-                    className="w-full py-2.5 bg-gradient-to-r cursor-pointer from-[#6d2b8a] to-[#9d4edd] hover:from-[#5a1e6b] hover:to-[#7d3c98] text-white rounded-lg font-medium transition-all"
+                    className="w-full py-2.5 cursor-pointer bg-gradient-to-r from-[#6d2b8a] to-[#9d4edd] hover:from-[#5a1e6b] hover:to-[#7d3c98] text-white rounded-lg font-medium transition-all shadow-sm"
                   >
                     Book Consultation
                   </motion.button>

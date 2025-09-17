@@ -67,6 +67,18 @@ const RefferDoctor = () => {
     return tomorrow.toISOString().split("T")[0];
   }
 
+  const handleBack = () => {
+    if (currentStep === 0) {
+      navigate(-1);
+    } else {
+      if (currentStep === 2 && !sessionPreferences.is_couple) {
+        setCurrentStep((prev) => prev - 2);
+        return;
+      }
+      setCurrentStep((prev) => prev - 1);
+    }
+  };
+
   const renderComponets = () => {
     switch (currentStep) {
       case 0:
@@ -129,10 +141,10 @@ const RefferDoctor = () => {
   }
 
   return (
-    <div className="relative">
+    <div className="relative mt-10">
       <button
-        // onClick={handleBack}
-        className="absolute top-0 md:left-20 flex items-center gap-2 px-4 py-5 cursor-pointer text-sm font-medium rounded-lg transition-all duration-200"
+        onClick={handleBack}
+        className="flex items-center gap-2 px-8 py-5 cursor-pointer text-sm font-medium rounded-lg transition-all duration-200"
       >
         <ChevronLeft className="h-5 w-5 text-gray-700" strokeWidth={2.5} />
         <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-700 to-gray-900">

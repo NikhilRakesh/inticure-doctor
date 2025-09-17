@@ -7,6 +7,7 @@ import { token_api } from "../lib/api";
 import { useAuthStore } from "../features/Auth/authSlice";
 import FollowUpTimeSlots from "../components/FollowUp/FollowUpTimeSlots";
 import { useToast } from "../context/ToastProvider";
+import { ChevronLeft } from "lucide-react";
 
 interface LanguageInfo {
   value: string;
@@ -90,6 +91,14 @@ const FollowUp = () => {
     const today = new Date();
     return today.toISOString().split("T")[0];
   }
+
+  const handleBack = () => {
+    if (currentStep === 0) {
+      navigate(-1);
+    } else {
+      setCurrentStep((prev) => prev - 1);
+    }
+  };
 
   // const { data: specializations } = useQuery<Specialization[]>({
   //   queryKey: ["available-hours"],
@@ -179,7 +188,20 @@ const FollowUp = () => {
   if (showLoading) {
     return <DoctorReferralLoading />;
   }
-  return <div>{renderComponets()}</div>;
+  return (
+    <div className="mt-10">
+      <button
+        onClick={handleBack}
+        className="flex items-center gap-2 px-8 py-5 cursor-pointer text-sm font-medium rounded-lg transition-all duration-200"
+      >
+        <ChevronLeft className="h-5 w-5 text-gray-700" strokeWidth={2.5} />
+        <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-700 to-gray-900">
+          Back
+        </span>
+      </button>
+      {renderComponets()}
+    </div>
+  );
 };
 
 export default FollowUp;

@@ -2,9 +2,7 @@ import React, { useState } from "react";
 import {
   Pill,
   FlaskConical,
-  Calendar,
   User,
-  MessageCircle,
   Clock,
   CheckCircle,
   FileText,
@@ -108,10 +106,11 @@ const PrescriptionPreview: React.FC<{
               {prescription.patient_first_name} {prescription.patient_last_name}
             </span>
           </p>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full">
-          <Calendar className="h-4 w-4" />
-          <span>Generated: {new Date().toLocaleDateString()}</span>
+          <p className="text-sm text-gray-500 mt-2">
+            This section displays the patient's current prescription. Any new
+            medications you add will appear here as well. To remove a medication
+            from the active list, click <strong>"Mark Inactive"</strong>.
+          </p>
         </div>
       </div>
 
@@ -153,7 +152,7 @@ const PrescriptionPreview: React.FC<{
                 }
               `}
             >
-              Past {inactiveMeds?.length > 0 && `(${inactiveMeds.length})`}
+              In Active {inactiveMeds?.length > 0 && `(${inactiveMeds.length})`}
             </button>
           </div>
 
@@ -288,7 +287,7 @@ const PrescriptionPreview: React.FC<{
         )}
 
         {/* Patient Notes */}
-        {prescription.patient_notes?.length > 0 && (
+        {/* {prescription.patient_notes?.length > 0 && (
           <Section
             title="Patient Notes"
             icon={<MessageCircle className="h-5 w-5 text-indigo-600" />}
@@ -302,7 +301,7 @@ const PrescriptionPreview: React.FC<{
               </div>
             ))}
           </Section>
-        )}
+        )} */}
       </div>
     </div>
   );

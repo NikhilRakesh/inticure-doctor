@@ -174,7 +174,7 @@ const FollowUpTimeSlots = ({
   });
 
   return (
-    <div className="w-full min-h-screen flex justify-center items-center  p-4">
+    <div className="w-full  flex justify-center items-center  p-4">
       <div className="w-6/12 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
         {/* Header */}
         <div className="bg-[#582768] p-6 text-white flex justify-between items-center">

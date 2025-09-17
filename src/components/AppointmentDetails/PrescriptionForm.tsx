@@ -2,8 +2,15 @@ import { useMutation } from "@tanstack/react-query";
 import { useToast } from "../../context/ToastProvider";
 import { useAuthStore } from "../../features/Auth/authSlice";
 import PrescriptionPreview from "../Appointment/PrescriptionPreview";
-import { motion } from "framer-motion";
-import { CalendarCheck, ClipboardEdit, FlaskConical, Plus } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  CalendarCheck,
+  ClipboardEdit,
+  FileText,
+  FlaskConical,
+  Plus,
+  X,
+} from "lucide-react";
 import { token_api } from "../../lib/api";
 import { FiPlus } from "react-icons/fi";
 import { useState } from "react";
@@ -229,6 +236,7 @@ const PrescriptionForm = ({
   const accessToken = useAuthStore((state) => state.accessToken);
   const { showToast } = useToast();
   const [validityDays, setValidityDays] = useState<number | "">("");
+  const [showModal, setShowModal] = useState(false);
 
   const deactivate_medicine = useMutation({
     mutationKey: ["deactivate_medicine"],
@@ -422,7 +430,7 @@ const PrescriptionForm = ({
                 className="inline-flex cursor-pointer items-center gap-2 bg-[#582768] transition text-white px-5 py-2.5 text-sm font-medium rounded-md shadow"
               >
                 <FiPlus className="h-4 w-4" />
-                Add Prescription
+                Add Medication
               </button>
             </div>
           </div>
@@ -580,58 +588,129 @@ const PrescriptionForm = ({
           </>
         )}
 
-        <div className="bg-white rounded-xl shadow-md border border-gray-300 overflow-hidden mt-8">
-          <div className="p-5 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-              <ClipboardEdit className="h-5 w-5 text-[#582768] mr-2" />
-              Doctor's Notes
-            </h3>
-          </div>
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mt-8">
+          {/* Header */}
+          <div className="p-5 border-b border-gray-100 flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                <ClipboardEdit className="h-5 w-5 text-[#582768] mr-2" />
+                Specialist's Notes
+                <span className="text-red-500 ml-1">*</span>
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                <strong className="text-[#582768]">Note:</strong> This message
+                will be visible to the patient. Please provide clear and concise
+                instructions or remarks.
+              </p>
+            </div>
 
-          <div className="p-5">
-            {prescriptionData?.patient_notes?.length === 0 ? (
-              <div className="space-y-4">
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 outline-0 rounded-lg focus:ring-2 focus:ring-[#582768] focus:border-transparent transition-all"
-                  rows={4}
-                  placeholder="Enter your notes for the patient..."
-                  autoFocus
-                />
-                <div className="flex justify-end">
-                  <motion.button
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleSavePatientNotes}
-                    disabled={!notes.trim()}
-                    className={`px-6 py-2.5 cursor-pointer rounded-lg text-white font-medium transition-colors ${
-                      !notes.trim()
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-[#582768] hover:bg-[#6a3180]"
-                    }`}
-                  >
-                    Save Notes
-                  </motion.button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {Array.isArray(prescriptionData?.patient_notes) &&
-                  prescriptionData?.patient_notes?.length > 0 && (
-                    <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap bg-gray-50 p-4 rounded-lg">
-                      {prescriptionData?.patient_notes[0]?.note}
-                    </div>
-                  )}
-
-                <div className="text-right">
-                  <span className="text-xs text-gray-500">
-                    Submitted on {new Date().toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
+            {prescriptionData?.patient_notes?.length > 0 && (
+              <button
+                onClick={() => setShowModal(true)}
+                className="text-sm px-4 py-2 rounded-lg bg-[#582768] text-white font-medium shadow-sm hover:bg-[#6a3180] transition"
+              >
+                View Previous Notes
+              </button>
             )}
           </div>
+
+          {/* Add Notes Section */}
+          <div className="p-5">
+            <div className="space-y-4">
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 outline-0 rounded-lg focus:ring-2 focus:ring-[#582768] focus:border-transparent transition-all text-gray-800 placeholder-gray-400"
+                rows={4}
+                placeholder="Enter your notes for the patient..."
+              />
+              <div className="flex justify-end">
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={handleSavePatientNotes}
+                  disabled={!notes.trim()}
+                  className={`px-6 py-2.5 rounded-lg text-white font-medium transition-colors shadow-md ${
+                    !notes.trim()
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-[#582768] hover:bg-[#6a3180]"
+                  }`}
+                >
+                  Save Notes
+                </motion.button>
+              </div>
+            </div>
+          </div>
+
+          {/* Modal for Existing Notes */}
+          <AnimatePresence>
+            {showModal && (
+              <motion.div
+                className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <motion.div
+                  className="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative"
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                >
+                  {/* Modal Header */}
+                  <div className="flex justify-between items-center border-b border-gray-200 pb-3 mb-4">
+                    <h4 className="text-lg font-semibold text-gray-800 flex items-center">
+                      <FileText className="h-5 w-5 text-[#582768] mr-2" />
+                      Previous Notes
+                    </h4>
+                    <button
+                      onClick={() => setShowModal(false)}
+                      className="p-1.5 rounded-full hover:bg-gray-100 transition"
+                    >
+                      <X className="w-5 h-5 text-gray-600" />
+                    </button>
+                  </div>
+
+                  {/* Notes List */}
+                  {Array.isArray(prescriptionData?.patient_notes) &&
+                  prescriptionData?.patient_notes?.length > 0 ? (
+                    <div className="space-y-4 max-h-80 overflow-y-auto pr-2">
+                      {prescriptionData.patient_notes.map((noteObj) => (
+                        <div
+                          key={noteObj.id}
+                          className="p-4 rounded-xl border border-gray-200 bg-gray-50 shadow-sm"
+                        >
+                          <p className="text-gray-700 whitespace-pre-wrap mb-3">
+                            {noteObj.note}
+                          </p>
+
+                          <div className="flex justify-between items-center text-xs text-gray-600">
+                            <span className="font-medium text-[#582768]">
+                              Dr. {noteObj.doctor}
+                            </span>
+                            <span>
+                              {new Date(noteObj.created_at).toLocaleDateString(
+                                "en-GB",
+                                {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                }
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 text-center">
+                      No previous notes available.
+                    </p>
+                  )}
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

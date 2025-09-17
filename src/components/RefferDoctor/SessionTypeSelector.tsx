@@ -25,7 +25,7 @@ export const SessionTypeSelector = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-[#f9f5ff] to-white flex items-center justify-center p-4 z-50">
+    <div className=" flex items-center justify-center p-4 z-50">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
