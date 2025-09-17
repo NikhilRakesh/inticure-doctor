@@ -3,19 +3,23 @@ import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { api } from "../../lib/api";
+import BookingAssistanceModal from "../Common/BookingAssistanceModal";
 
 type Specializations = {
   specialization_id: number;
   specialization: string;
   is_couple: boolean;
+  is_doctor_available: boolean;
 };
 
 export const SpecializationSelector = ({
   onSelect,
   selectedSpecialization,
+  appointment_id,
   nextStep,
   nextNextStep,
 }: {
+  appointment_id: string | null;
   onSelect: (spec: number) => void;
   selectedSpecialization: number;
   nextStep: () => void;
@@ -23,17 +27,24 @@ export const SpecializationSelector = ({
 }) => {
   const [selected, setSelected] = useState<Specializations | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const { data: specialties, isLoading } = useQuery({
     queryKey: ["specializations"],
     queryFn: () => {
       return api
-        .get<Specializations[]>(`doctor/specializations/`)
+        .get<Specializations[]>(
+          `doctor/specializations/?appointment_id=${appointment_id}`
+        )
         .then((res) => res.data);
     },
   });
 
   const handleSelect = (spec: Specializations) => {
+    if (!spec.is_doctor_available) {
+      setIsModalOpen(true);
+      return;
+    }
     if (isAnimating) return;
     setIsAnimating(true);
     setSelected(spec);
@@ -159,6 +170,9 @@ export const SpecializationSelector = ({
           </button>
         </motion.div>
       </motion.div>
+      {isModalOpen && (
+        <BookingAssistanceModal onClose={() => setIsModalOpen(false)} />
+      )}
     </div>
   );
 };

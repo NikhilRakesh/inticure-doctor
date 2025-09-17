@@ -8,10 +8,8 @@ import {
   Clock,
   CheckCircle,
   FileText,
-  ExternalLink,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { baseurl } from "../../lib/api";
 
 interface FollowupNote {
   id: number;
@@ -72,7 +70,6 @@ interface MedicalData {
   patient_first_name: string;
   patient_last_name: string;
   files: FileItem[];
-
   followup_advices: FollowupNote[];
 }
 
@@ -272,47 +269,6 @@ const PrescriptionPreview: React.FC<{
             ))}
           </Section>
         )}
-
-        <div className="space-y-4 py-5">
-          {prescription.files.map((file, index) => {
-            const displayName = file.file_name ?? `File ${index + 1}`;
-            const formattedDate = new Date(
-              file.uploaded_on
-            ).toLocaleDateString();
-
-            return (
-              <div
-                key={file.id}
-                className="flex items-center justify-between rounded-xl border border-gray-200 bg-white shadow-sm p-4 hover:shadow-md transition"
-              >
-                {/* Left side: File info */}
-                <div className="flex items-start space-x-3">
-                  <div className="bg-blue-50 p-2 rounded-lg">
-                    <FileText className="w-6 h-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{displayName}</p>
-                    <div className="flex items-center text-sm text-gray-500 mt-1">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      {formattedDate}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right side: View button */}
-                <a
-                  href={baseurl + file.common_file}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition"
-                >
-                  View
-                  <ExternalLink className="w-4 h-4 ml-1" />
-                </a>
-              </div>
-            );
-          })}
-        </div>
 
         {/* Follow-up */}
         {prescription.followup_advices?.length > 0 && (

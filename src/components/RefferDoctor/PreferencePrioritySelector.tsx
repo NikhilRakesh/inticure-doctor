@@ -34,15 +34,15 @@ const dropdown = {
   exit: { opacity: 0, y: -10 },
 };
 
-const modal = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.2 },
-  },
-  exit: { opacity: 0, scale: 0.95 },
-};
+// const modal = {
+//   hidden: { opacity: 0, scale: 0.95 },
+//   visible: {
+//     opacity: 1,
+//     scale: 1,
+//     transition: { duration: 0.2 },
+//   },
+//   exit: { opacity: 0, scale: 0.95 },
+// };
 
 interface LanguageItem {
   language: string;
@@ -68,37 +68,38 @@ export const PreferencePrioritySelector = ({
   });
 
   const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
-  const [showPriorityModal, setShowPriorityModal] = useState(false);
+  // const [showPriorityModal, setShowPriorityModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const genderOptions = ["Male", "Female", "No Preference"];
 
-  const handleContinue = () => {
-    if (!preferences.gender_info.value || !preferences.language_info.value)
-      return;
-    setShowPriorityModal(true);
-  };
+  // const handleContinue = () => {
+  //   if (!preferences.gender_info.value || !preferences.language_info.value)
+  //     return;
+  //   handleNoPriority()
+  //   // setShowPriorityModal(true);
+  // };
 
-  const handlePrioritySelect = (type: "gender" | "language") => {
-    const newPreferences = { ...preferences };
-    if (type === "gender") {
-      newPreferences.gender_info.priority = 2;
-      newPreferences.language_info.priority = 1;
-    } else {
-      newPreferences.language_info.priority = 2;
-      newPreferences.gender_info.priority = 1;
-    }
-    setPreferences(newPreferences);
-    setShowPriorityModal(false);
-    submitPreferences(newPreferences);
-  };
+  // const handlePrioritySelect = (type: "gender" | "language") => {
+  //   const newPreferences = { ...preferences };
+  //   if (type === "gender") {
+  //     newPreferences.gender_info.priority = 2;
+  //     newPreferences.language_info.priority = 1;
+  //   } else {
+  //     newPreferences.language_info.priority = 2;
+  //     newPreferences.gender_info.priority = 1;
+  //   }
+  //   setPreferences(newPreferences);
+  //   setShowPriorityModal(false);
+  //   submitPreferences(newPreferences);
+  // };
 
   const handleNoPriority = () => {
     const newPreferences = { ...preferences };
     newPreferences.gender_info.priority = 2;
     newPreferences.language_info.priority = 2;
     setPreferences(newPreferences);
-    setShowPriorityModal(false);
+    // setShowPriorityModal(false);
     submitPreferences(newPreferences);
   };
 
@@ -243,9 +244,11 @@ export const PreferencePrioritySelector = ({
 
         <div className="p-4 border-t border-gray-100">
           <motion.button
-            onClick={handleContinue}
+            onClick={handleNoPriority}
             disabled={
-              !preferences.gender_info.value || !preferences.language_info.value||isSubmitting
+              !preferences.gender_info.value ||
+              !preferences.language_info.value ||
+              isSubmitting
             }
             className={`w-full py-3 rounded-lg cursor-pointer font-medium flex items-center justify-center gap-2 ${
               !preferences.gender_info.value || !preferences.language_info.value
@@ -272,7 +275,7 @@ export const PreferencePrioritySelector = ({
         </div>
       </motion.div>
 
-      <AnimatePresence>
+      {/* <AnimatePresence>
         {showPriorityModal && (
           <div className="fixed inset-0 bg-gray-700/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <motion.div
@@ -332,7 +335,7 @@ export const PreferencePrioritySelector = ({
             </motion.div>
           </div>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
     </motion.div>
   );
 };

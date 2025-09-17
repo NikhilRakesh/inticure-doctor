@@ -130,6 +130,22 @@ interface FollowupNote {
   date: string;
 }
 
+interface HabitualQuestionOption {
+  id: number;
+  option: string;
+  question: number;
+  is_selected: boolean;
+}
+
+interface HabitualQuestion {
+  id: number;
+  question: string;
+  answer_type: "radio_select";
+  customer_gender: "male" | "female" | "other";
+  category: number;
+  options: HabitualQuestionOption[];
+}
+
 interface AppointmentData {
   appointment: Appointment;
   patients: Patient[];
@@ -144,6 +160,7 @@ interface AppointmentData {
   is_prescription_allowed: boolean;
   doctor_id: number;
   notes_for_patient: NoteForPatient[];
+  habitual_questions: HabitualQuestion[];
 }
 
 interface PatientAssessmentFormProps {
@@ -189,6 +206,7 @@ const PatientAssessmentForm: React.FC<PatientAssessmentFormProps> = ({
                   <input
                     id="height"
                     type="number"
+                    placeholder="Enter height"
                     className={`block w-24 no-arrows border rounded-lg border-gray-200 shadow-sm outline-0 focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-3 py-2 transition-all ${
                       errors.height
                         ? "border-red-300 focus:border-red-300 focus:ring-red-200/50"
@@ -201,6 +219,9 @@ const PatientAssessmentForm: React.FC<PatientAssessmentFormProps> = ({
                     defaultValue="cm"
                     className="block w-20 border rounded-lg outline-0 border-gray-200 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-2 py-2 transition-all"
                   >
+                    <option value="" disabled>
+                      Select
+                    </option>
                     <option value="cm">cm</option>
                     <option value="ft">ft</option>
                   </select>
@@ -226,6 +247,7 @@ const PatientAssessmentForm: React.FC<PatientAssessmentFormProps> = ({
                   <input
                     id="weight"
                     type="number"
+                    placeholder="Enter weight"
                     className={`block w-24 no-arrows border rounded-lg border-gray-200 shadow-sm outline-0 focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-3 py-2 transition-all ${
                       errors.weight
                         ? "border-red-300 focus:border-red-300 focus:ring-red-200/50"
@@ -238,6 +260,9 @@ const PatientAssessmentForm: React.FC<PatientAssessmentFormProps> = ({
                     defaultValue="kg"
                     className="block w-20 border rounded-lg border-gray-200 outline-0 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-2 py-2 transition-all"
                   >
+                    <option value="" disabled>
+                      Select
+                    </option>
                     <option value="kg">kg</option>
                     <option value="lbs">lbs</option>
                   </select>
@@ -251,7 +276,10 @@ const PatientAssessmentForm: React.FC<PatientAssessmentFormProps> = ({
               </div>
             </div>
           </div>
-          <LifestyleForm />
+          <LifestyleForm
+            habitual_questions={data.habitual_questions}
+            register={register}
+          />
           {/* Medical History Section */}
           <div className="bg-white rounded-xl shadow-md mt-5 border border-gray-200 p-6 transition-all hover:shadow-[0_6px_24px_rgba(79,70,229,0.1)]">
             <div className="flex items-center gap-3 mb-6">

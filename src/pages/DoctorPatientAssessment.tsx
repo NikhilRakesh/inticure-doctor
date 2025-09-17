@@ -37,6 +37,7 @@ import PrescriptionForm from "../components/AppointmentDetails/PrescriptionForm"
 import PatientAssessmentForm from "../components/AppointmentDetails/PatientAssessmentForm";
 import CoupleConsultationModal from "../components/Common/CoupleConsultationModal";
 import ClinicalNotes from "../components/AppointmentDetails/ClinicalNotes";
+import PatientFileUploader from "../components/AppointmentDetails/UploadedFile";
 
 type FormData = {
   height: string;
@@ -51,6 +52,22 @@ type FormData = {
   height_unit: "cm" | "ft";
   weight_unit: "kg" | "lbs";
 };
+
+interface HabitualQuestionOption {
+  id: number;
+  option: string;
+  question: number;
+  is_selected: boolean;
+}
+
+interface HabitualQuestion {
+  id: number;
+  question: string;
+  answer_type: "radio_select";
+  customer_gender: "male" | "female" | "other";
+  category: number;
+  options: HabitualQuestionOption[];
+}
 
 interface AppointmentData {
   appointment: Appointment;
@@ -67,6 +84,7 @@ interface AppointmentData {
   is_prescription_allowed: boolean;
   doctor_id: number;
   notes_for_patient: NoteForPatient[];
+  habitual_questions: HabitualQuestion[];
   is_couple: boolean;
 }
 
@@ -134,6 +152,7 @@ interface Payload {
         id: number;
       }[]
     | undefined;
+  habitual_questions: { question: number; option: string }[] | undefined;
 }
 
 interface PayloadPrescription {
@@ -245,7 +264,7 @@ const DoctorPatientAssessment = () => {
     setValue,
   } = useForm<FormData>();
   const [activeTab, setActiveTab] = useState<
-    "assessment" | "prescription" | "clinicalnotes"
+    "assessment" | "prescription" | "clinicalnotes" | "files"
   >("assessment");
   const [prescription, setPrescription] = useState({
     medication: "",
@@ -309,6 +328,10 @@ const DoctorPatientAssessment = () => {
       ...q,
       answer: formData[`extra_${i}` as keyof FormData],
     }));
+    const updatedHabitualQuestions = data?.habitual_questions.map((q) => ({
+      question: q.id,
+      option: formData[`habitual_${q.id}` as keyof FormData],
+    }));
 
     const payload: Payload = {
       height: formData.height,
@@ -318,6 +341,7 @@ const DoctorPatientAssessment = () => {
       weight_unit: formData.weight_unit,
       height_unit: formData.height_unit,
       customer: selectedPatientId,
+      habitual_questions: updatedHabitualQuestions,
     };
 
     addPatientData.mutate(payload);
@@ -531,7 +555,16 @@ const DoctorPatientAssessment = () => {
       const fieldName = `extra_${index}`;
       setValue(fieldName as keyof FormData, group.answer || "");
     });
-  }, [setValue, prescriptionData]);
+
+    data?.habitual_questions?.forEach((group) => {
+      const fieldName = `habitual_${group.id}`;
+      const selectedOption = group.options.find((opt) => opt.is_selected);
+      setValue(
+        fieldName as keyof FormData,
+        selectedOption?.id.toString() || ""
+      );
+    });
+  }, [setValue, prescriptionData, data]);
 
   useEffect(() => {
     if (data && data?.patients && selectedPatientId === 0) {
@@ -1270,6 +1303,16 @@ const DoctorPatientAssessment = () => {
               >
                 Prescription
               </button>
+              <button
+                onClick={() => setActiveTab("files")}
+                className={`py-4 px-6 text-center border-b-2 cursor-pointer font-medium text-sm ${
+                  activeTab === "files"
+                    ? "border-indigo-500 text-indigo-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Files
+              </button>
             </nav>
           </div>
 
@@ -1312,6 +1355,12 @@ const DoctorPatientAssessment = () => {
               handleAddInvestigation={handleAddInvestigation}
               prescriptionData={prescriptionData}
               handleSavePatientNotes={handleSavePatientNotes}
+            />
+          )}
+          {activeTab === "files" && prescriptionData && (
+            <PatientFileUploader
+              patientFiles={prescriptionData?.files}
+              aid={aid}
             />
           )}
         </div>

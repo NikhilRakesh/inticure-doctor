@@ -5,6 +5,7 @@ import { SpecializationSelector } from "../components/RefferDoctor/Specializatio
 import { PreferencePrioritySelector } from "../components/RefferDoctor/PreferencePrioritySelector";
 import { DoctorList } from "../components/RefferDoctor/DoctorList";
 import { useLocation, useNavigate } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
 
 interface LanguageInfo {
   value: string;
@@ -71,6 +72,7 @@ const RefferDoctor = () => {
       case 0:
         return (
           <SpecializationSelector
+            appointment_id={appointmentId}
             onSelect={(value: number) =>
               setSessionPreferences((prev) => ({
                 ...prev,
@@ -79,7 +81,7 @@ const RefferDoctor = () => {
             }
             selectedSpecialization={sessionPreferences.specialization_id}
             nextStep={nextStep}
-            nextNextStep={()=> setCurrentStep(currentStep + 2)}
+            nextNextStep={() => setCurrentStep(currentStep + 2)}
           />
         );
       case 1:
@@ -126,7 +128,20 @@ const RefferDoctor = () => {
     return <DoctorReferralLoading />;
   }
 
-  return <div>{renderComponets()}</div>;
+  return (
+    <div className="relative">
+      <button
+        // onClick={handleBack}
+        className="absolute top-0 md:left-20 flex items-center gap-2 px-4 py-5 cursor-pointer text-sm font-medium rounded-lg transition-all duration-200"
+      >
+        <ChevronLeft className="h-5 w-5 text-gray-700" strokeWidth={2.5} />
+        <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-700 to-gray-900">
+          Back
+        </span>
+      </button>
+      {renderComponets()}
+    </div>
+  );
 };
 
 export default RefferDoctor;
