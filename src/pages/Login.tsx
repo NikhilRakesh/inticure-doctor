@@ -19,6 +19,19 @@ import { useToast } from "../context/ToastProvider";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../features/Auth/authSlice";
+import { useMutation } from "@tanstack/react-query";
+
+interface EmailPayload {
+  email_id: string;
+  otp: string;
+}
+
+interface PhonePayload {
+  phone_number: string;
+  otp: string;
+}
+
+type LoginPayload = EmailPayload | PhonePayload;
 
 const Login = () => {
   const [loginMethod, setLoginMethod] = useState<"email" | "mobile">("mobile");
@@ -131,35 +144,65 @@ const Login = () => {
         ? { email_id: email, otp: enteredOtp }
         : { phone_number: mobile, otp: enteredOtp };
 
-    try {
-      const response = await api.post("doctor/verify_login/", payload);
-      if (response.status === 200) {
-        if (
-          response.data.status === "rejected" ||
-          response.data.status === "pending"
-        ) {
-          navigate(`/profile-status/${response.data.did}`);
-        } else {
-          login(
-            response.data.sessionid,
-            response.data.refresh_token,
-            response.data.doctor_flag
-          );
-          navigate("/");
-        }
+    // try {
+    //   const response = await api.post("doctor/verify_login/", payload);
+
+    //   if (response.status === 200) {
+    //     console.log("Navigating to:", `/profile-status/${response.data.did}`);
+    //     if (
+    //       response.data.status === "rejected" ||
+    //       response.data.status === "pending"
+    //     ) {
+    //       console.log("Navigating to:", `/profile-status/${response.data.did}`);
+    //       navigate(`/profile-status/${response.data.did}`);
+    //     } else {
+    //       login(
+    //         response.data.sessionid,
+    //         response.data.refresh_token,
+    //         response.data.doctor_flag
+    //       );
+    //       navigate("/");
+    //     }
+    //   }
+    // } catch (error) {
+    //   console.log("Error occurs in handleVerifyOtp", error);
+    //   setIsLoading(false);
+    //   if (axios.isAxiosError(error)) {
+    //     if (error.response?.status === 400) {
+    //       showToast(`${error.response.data}`, "error");
+    //     } else {
+    //       showToast("Verification failed. Please try again.", "error");
+    //     }
+    //   }
+    // }
+    verifyDrOtp.mutate(payload);
+  };
+
+  const verifyDrOtp = useMutation({
+    mutationKey: ["edit_available_hours"],
+    mutationFn: (payload: LoginPayload) =>
+      api.post("doctor/verify_login/", payload).then((res) => res.data),
+    onSuccess: (data) => {
+      if (data.status === "rejected" || data.status === "pending") {
+        console.log("Navigating to:", `/profile-status/${data.did}`);
+        navigate(`/profile-status/${data.did}`);
+      } else {
+        login(data.sessionid, data.refresh_token, data.doctor_flag);
+        navigate("/");
       }
-    } catch (error) {
-      console.log("Error occurs in handleVerifyOtp", error);
+    },
+    onError: (error) => {
       setIsLoading(false);
       if (axios.isAxiosError(error)) {
-        if (error.response?.status === 400) {
-          showToast(`${error.response.data}`, "error");
-        } else {
-          showToast("Verification failed. Please try again.", "error");
-        }
+        showToast(
+          error.response?.data?.error || "Something went wrong",
+          "error"
+        );
+      } else {
+        showToast("An unexpected error occurred", "error");
       }
-    }
-  };
+    },
+  });
 
   const handleOtpChange = (
     e: React.ChangeEvent<HTMLInputElement>,

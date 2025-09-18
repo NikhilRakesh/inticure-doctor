@@ -65,7 +65,8 @@ const ApplicationStatusBanner = () => {
     rejected: {
       icon: <FiXCircle className="w-5 h-5 text-rose-500" />,
       title: "Application Rejected",
-      message: "Unfortunately, your application was not approved. Please check your email for more details about the decision.",
+      message:
+        "Unfortunately, your application was not approved. Please check your email for more details about the decision.",
       color: "bg-rose-100 text-rose-800",
       timeline: {
         current: "Review Completed",
@@ -190,7 +191,13 @@ const ApplicationStatusBanner = () => {
                     {currentStatus.timeline.current}
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    Started on {data?.joined_date}
+                    Started on{" "}
+                    {data?.joined_date &&
+                      new Date(data.joined_date).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
                   </p>
                 </div>
               </div>

@@ -24,6 +24,10 @@ function App() {
       element: <DoctorRegistration />,
     },
     {
+      path: "profile-status/:did",
+      element: <ApplicationStatusBanner />,
+    },
+    {
       path: "/",
       element: <RoutesProtector />,
       children: [
@@ -48,10 +52,6 @@ function App() {
               element: <DoctorCalendar />,
             },
 
-            {
-              path: "profile-status/:did",
-              element: <ApplicationStatusBanner />,
-            },
             {
               path: "reffer-doctor",
               element: <RefferDoctor />,
