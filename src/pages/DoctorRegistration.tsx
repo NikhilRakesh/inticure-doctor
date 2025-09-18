@@ -386,12 +386,12 @@ const DoctorRegistration = () => {
       newErrors.country = "Country is required";
       valid = false;
     }
-    if (!formData.countryCode) {
-      newErrors.title = "Country code is required";
-      valid = false;
-    }
-    if ( formData.countryCode.trim()) {
-      if (formData.countryCode === "91" &&formData.phone&& !validatePhone(formData.phone)) {
+    if (formData.phone.trim()) {
+      if (
+        formData.countryCode === "91" &&
+        formData.phone &&
+        !validatePhone(formData.phone)
+      ) {
         newErrors.phone = "Please enter a valid 10-digit Indian number";
         valid = false;
       } else if (!formData.countryCode.trim()) {
@@ -399,9 +399,10 @@ const DoctorRegistration = () => {
         valid = false;
       }
     }
-    if (formData.whatappCountryCode.trim()) {
+    if (formData.whatappNumber.trim()) {
       if (
-        formData.whatappCountryCode === "91" &&formData.whatappNumber&&
+        formData.whatappCountryCode === "91" &&
+        formData.whatappNumber &&
         !validatePhone(formData.whatappNumber)
       ) {
         newErrors.whatappNumber = "Please enter a valid 10-digit Indian number";
@@ -419,7 +420,7 @@ const DoctorRegistration = () => {
       newErrors.specialization = "At least one specialization is required";
       valid = false;
     }
-    if (formData.registrationYear) {
+    if (formData.registrationYear.trim()) {
       if (!validateYear(formData.registrationYear)) {
         newErrors.registrationYear =
           "Please enter a valid year (1900-current year)";
@@ -445,6 +446,7 @@ const DoctorRegistration = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!validateForm()) return;
 
     try {
@@ -757,7 +759,9 @@ const DoctorRegistration = () => {
               </div>
 
               {errors.phone && (
-                <p className="text-xs text-[#d02c6e] mt-1">{errors.phone}</p>
+                <p className="text-xs text-[#d02c6e] mt-1">
+                  {errors.whatappNumber}
+                </p>
               )}
               <p className="text-xs text-[#b899d8]">
                 Used as your WhatsApp login number.
