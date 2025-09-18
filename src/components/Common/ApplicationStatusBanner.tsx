@@ -8,7 +8,7 @@ import {
   FiXCircle,
 } from "react-icons/fi";
 import { FaHandshake, FaUserMd } from "react-icons/fa";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import { type JSX } from "react";
@@ -76,6 +76,7 @@ const ApplicationStatusBanner = () => {
   };
 
   const { did } = useParams();
+  const navigate = useNavigate();
 
   const { data, isPending } = useQuery({
     queryKey: ["details_with_id", did],
@@ -91,7 +92,13 @@ const ApplicationStatusBanner = () => {
   return isPending ? (
     <Loading />
   ) : (
-    <div className="min-h-screen flex justify-center items-center p-4 md:p-10 bg-white">
+    <div className="min-h-screen relative flex justify-center items-center p-4 md:p-10 bg-white">
+      <button
+        onClick={() => navigate("/")}
+        className="text-sm absolute top-5 left-5  text-gray-700 cursor-pointer hover:underline"
+      >
+        ← Back to Home
+      </button>
       <motion.div
         initial={{ opacity: 0, y: -20, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -129,7 +136,7 @@ const ApplicationStatusBanner = () => {
                 <FaUserMd className="w-6 h-6 text-[#592769]" />
               </motion.div>
               <div>
-                <h2 className="text-xl font-bold text-white">IntiCure</h2>
+                <h2 className="text-xl font-bold text-white">inticFure</h2>
                 <p className="text-sm text-[#d6769f]">Medical Network</p>
               </div>
             </div>
