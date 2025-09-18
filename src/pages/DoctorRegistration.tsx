@@ -50,6 +50,7 @@ type Errors = {
   firstName: string;
   lastName: string;
   gender: string;
+  whatappNumber: string;
   country: string;
   email: string;
   dob: string;
@@ -129,6 +130,7 @@ const DoctorRegistration = () => {
     dob: "",
     phone: "",
     qualification: "",
+    whatappNumber: "",
     specialization: "",
     certificationNumber: "",
     registrationYear: "",
@@ -199,7 +201,7 @@ const DoctorRegistration = () => {
 
   async function fetchSpecilizations() {
     try {
-      const response = await api.get("doctor/specializations/");
+      const response = await api.get("doctor/specializations_no_availability/");
       if (response.status === 200) {
         setSpecializations(response.data);
       }
@@ -388,8 +390,8 @@ const DoctorRegistration = () => {
       newErrors.title = "Country code is required";
       valid = false;
     }
-    if (formData.phone.trim() || formData.countryCode.trim()) {
-      if (formData.countryCode === "91" && !validatePhone(formData.phone)) {
+    if ( formData.countryCode.trim()) {
+      if (formData.countryCode === "91" &&formData.phone&& !validatePhone(formData.phone)) {
         newErrors.phone = "Please enter a valid 10-digit Indian number";
         valid = false;
       } else if (!formData.countryCode.trim()) {
@@ -397,12 +399,12 @@ const DoctorRegistration = () => {
         valid = false;
       }
     }
-    if (formData.whatappNumber.trim() || formData.whatappCountryCode.trim()) {
+    if (formData.whatappCountryCode.trim()) {
       if (
-        formData.whatappCountryCode === "91" &&
+        formData.whatappCountryCode === "91" &&formData.whatappNumber&&
         !validatePhone(formData.whatappNumber)
       ) {
-        newErrors.phone = "Please enter a valid 10-digit Indian number";
+        newErrors.whatappNumber = "Please enter a valid 10-digit Indian number";
         valid = false;
       } else if (!formData.whatappCountryCode.trim()) {
         newErrors.phone = "Please enter country code";
@@ -726,7 +728,7 @@ const DoctorRegistration = () => {
                       if (value.length <= 4) {
                         setFormData((prev) => ({
                           ...prev,
-                          whatappNumber: value,
+                          whatappCountryCode: value,
                         }));
                       }
                     }}
@@ -739,8 +741,8 @@ const DoctorRegistration = () => {
                 <div className="relative flex-1">
                   <input
                     type="tel"
-                    name="phone"
-                    value={formData.phone}
+                    name="whatappNumber"
+                    value={formData.whatappNumber}
                     onChange={(e) => {
                       const value = e.target.value.replace(/\D/g, "");
                       if (value.length <= 10) handleChange(e);
@@ -903,7 +905,7 @@ const DoctorRegistration = () => {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium text-[#44205d]">
-                Registration Year*
+                Registration Year
               </label>
               <input
                 type="number"
