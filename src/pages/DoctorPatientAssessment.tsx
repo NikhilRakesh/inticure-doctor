@@ -865,7 +865,7 @@ const DoctorPatientAssessment = () => {
     }
     const pid = data?.booked_customer;
     navigate(
-      `/follow-up?did=${data?.doctor_id}&aid=${data?.appointment.appointment_id}&patient_ids=${patientIds}&pid=${pid}`
+      `/follow-up?did=${data?.doctor_id}&aid=${data?.appointment.appointment_id}&patient_ids=${patientIds}&pid=${pid}&is_couple=${data?.is_couple}`
     );
   };
 

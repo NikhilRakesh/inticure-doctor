@@ -36,7 +36,6 @@ interface Slot {
 }
 
 const FollowUp = () => {
-  const [currentStep, setCurrentStep] = useState(0);
   const [showLoading, setShowLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,6 +43,8 @@ const FollowUp = () => {
   const aid = searchParams.get("aid");
   const did = searchParams.get("did");
   const pid = searchParams.get("pid");
+  const iscouple = searchParams.get("is_couple");
+  const [currentStep, setCurrentStep] = useState(iscouple === "true" ? 0 : 1);
   const accessToken = useAuthStore((state) => state.accessToken);
   const [sessionPreferences, setSessionPreferences] =
     useState<SessionPreferences>({
@@ -154,15 +155,6 @@ const FollowUp = () => {
             }}
           />
         );
-      // case 1:
-      //   return (
-      //     <FollowUpSpecializationSelector
-      //       specializations={specializations}
-      //       nextStep={nextStep}
-      //       selectedSpecialization={selectedSpecialization}
-      //       setSelectedSpecialization={setSelectedSpecialization}
-      //     />
-      //   );
       case 1:
         return (
           <FollowUpTimeSlots
