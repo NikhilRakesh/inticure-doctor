@@ -448,7 +448,7 @@ const DoctorRegistration = () => {
     e.preventDefault();
 
     if (!validateForm()) return;
-
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     try {
       const response = await form_api.post("doctor/doctor-profiles/create/", {
         salutation: formData.title,
@@ -473,6 +473,7 @@ const DoctorRegistration = () => {
         registration_year: formData.registrationYear,
         specializations: formData.specializationIds,
         language_ids: formData.languages,
+        time_zone: timeZone,
       });
 
       if (response.status === 201) {
