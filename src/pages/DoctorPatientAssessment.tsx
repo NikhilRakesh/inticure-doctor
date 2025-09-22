@@ -38,6 +38,7 @@ import PatientAssessmentForm from "../components/AppointmentDetails/PatientAsses
 import CoupleConsultationModal from "../components/Common/CoupleConsultationModal";
 import ClinicalNotes from "../components/AppointmentDetails/ClinicalNotes";
 import PatientFileUploader from "../components/AppointmentDetails/UploadedFile";
+import PrescriptionPreview from "../components/Appointment/PrescriptionPreview";
 
 type FormData = {
   height: string;
@@ -164,6 +165,7 @@ interface PayloadPrescription {
   strength: string;
   medicine_name: string;
   customer: number;
+  validity: number;
 }
 
 interface Note {
@@ -185,6 +187,7 @@ interface NoteForPatient {
 
 interface PrescribedMedicine {
   id: number;
+  doctor_id: number;
   created_at: string;
   updated_at: string;
   instruction: string;
@@ -264,7 +267,11 @@ const DoctorPatientAssessment = () => {
     setValue,
   } = useForm<FormData>();
   const [activeTab, setActiveTab] = useState<
-    "assessment" | "prescription" | "clinicalnotes" | "files"
+    | "assessment"
+    | "prescription"
+    | "clinicalnotes"
+    | "files"
+    | "prescriptionhistory"
   >("assessment");
   const [prescription, setPrescription] = useState({
     medication: "",
@@ -273,6 +280,7 @@ const DoctorPatientAssessment = () => {
     frequency: "",
     duration: "",
     instructions: "",
+    validity: "",
   });
   const [followUpAdvice, setFollowUpAdvice] = useState({
     instructions: "",
@@ -404,6 +412,7 @@ const DoctorPatientAssessment = () => {
         frequency: "",
         duration: "",
         instructions: "",
+        validity: "",
       });
     },
     onError: () => {
@@ -521,6 +530,25 @@ const DoctorPatientAssessment = () => {
     },
     onError: () => {
       showToast("Failed . Try again", "error");
+    },
+  });
+
+  const deactivate_medicine = useMutation({
+    mutationKey: ["deactivate_medicine"],
+    mutationFn: (mid: number) =>
+      token_api(accessToken)
+        .post("doctor/deactivate_medicine/", {
+          medicine_id: mid,
+          customer: selectedPatientId,
+        })
+        .then((res) => res.data),
+    onSuccess: () => {
+      showToast("Medicine deactivated successfully.", "success");
+      refetchPrescription();
+      setNotes("");
+    },
+    onError: () => {
+      showToast("Failed to deactivate medicine. Try again", "error");
     },
   });
 
@@ -697,6 +725,7 @@ const DoctorPatientAssessment = () => {
       dosage: prescription.dosage,
       strength: prescription.strength,
       medicine_name: prescription.medication,
+      validity: Number(prescription.validity),
       customer: selectedPatientId,
     });
   };
@@ -1301,8 +1330,25 @@ const DoctorPatientAssessment = () => {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                Prescription
+                {data?.is_prescription_allowed
+                  ? " Prescription"
+                  : "Specialist's Notes"}
               </button>
+              {prescriptionData &&
+                (prescriptionData?.tests?.length > 0 ||
+                  prescriptionData?.medicine?.length > 0 ||
+                  prescriptionData?.followup_advices?.length > 0) && (
+                  <button
+                    onClick={() => setActiveTab("prescriptionhistory")}
+                    className={`py-4 px-6 text-center border-b-2 cursor-pointer font-medium text-sm ${
+                      activeTab === "prescriptionhistory"
+                        ? "border-indigo-500 text-indigo-600"
+                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    }`}
+                  >
+                    Prescription History
+                  </button>
+                )}
               <button
                 onClick={() => setActiveTab("files")}
                 className={`py-4 px-6 text-center border-b-2 cursor-pointer font-medium text-sm ${
@@ -1338,10 +1384,8 @@ const DoctorPatientAssessment = () => {
           )}
           {activeTab === "prescription" && data && prescriptionData && (
             <PrescriptionForm
-              refetchPrescription={refetchPrescription}
               setNotes={setNotes}
               notes={notes}
-              selectedPatientId={selectedPatientId}
               data={data}
               prescription={prescription}
               errors2={errors2}
@@ -1356,6 +1400,17 @@ const DoctorPatientAssessment = () => {
               prescriptionData={prescriptionData}
               handleSavePatientNotes={handleSavePatientNotes}
             />
+          )}
+          {activeTab === "prescriptionhistory" && data && prescriptionData && (
+            <div className="p-5">
+              <PrescriptionPreview
+                prescription={prescriptionData}
+                onSelectItem={(id: number) => {
+                  deactivate_medicine.mutate(id);
+                }}
+                doctor_id={data.doctor_id}
+              />
+            </div>
           )}
           {activeTab === "files" && prescriptionData && (
             <PatientFileUploader

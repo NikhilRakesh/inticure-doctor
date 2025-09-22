@@ -1,17 +1,11 @@
-import { useMutation } from "@tanstack/react-query";
-import { useToast } from "../../context/ToastProvider";
-import { useAuthStore } from "../../features/Auth/authSlice";
-import PrescriptionPreview from "../Appointment/PrescriptionPreview";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarCheck,
   ClipboardEdit,
   FileText,
   FlaskConical,
-  Plus,
   X,
 } from "lucide-react";
-import { token_api } from "../../lib/api";
 import { FiPlus } from "react-icons/fi";
 import { useState } from "react";
 
@@ -148,6 +142,7 @@ interface Prescription {
   frequency: string;
   duration: string;
   instructions: string;
+  validity: string;
 }
 
 interface PatientNote {
@@ -193,9 +188,7 @@ interface Investigation {
 }
 
 interface PrescriptionFormProbs {
-  refetchPrescription: () => void;
   setNotes: React.Dispatch<React.SetStateAction<string>>;
-  selectedPatientId: number;
   data: AppointmentData;
   prescription: Prescription;
   prescriptionData: PrescriptionData;
@@ -215,10 +208,8 @@ interface PrescriptionFormProbs {
 }
 
 const PrescriptionForm = ({
-  refetchPrescription,
   setNotes,
   notes,
-  selectedPatientId,
   data,
   prescription,
   errors2,
@@ -233,57 +224,24 @@ const PrescriptionForm = ({
   prescriptionData,
   handleSavePatientNotes,
 }: PrescriptionFormProbs) => {
-  const accessToken = useAuthStore((state) => state.accessToken);
-  const { showToast } = useToast();
-  const [validityDays, setValidityDays] = useState<number | "">("");
   const [showModal, setShowModal] = useState(false);
-
-  const deactivate_medicine = useMutation({
-    mutationKey: ["deactivate_medicine"],
-    mutationFn: (mid: number) =>
-      token_api(accessToken)
-        .post("doctor/deactivate_medicine/", {
-          medicine_id: mid,
-          customer: selectedPatientId,
-        })
-        .then((res) => res.data),
-    onSuccess: () => {
-      showToast("Medicine deactivated successfully.", "success");
-      refetchPrescription();
-      setNotes("");
-    },
-    onError: () => {
-      showToast("Failed to deactivate medicine. Try again", "error");
-    },
-  });
-
-  const add_prescription_validity = useMutation({
-    mutationKey: ["add_prescription_validity"],
-    mutationFn: (days: number) =>
-      token_api(accessToken)
-        .post("doctor/add_prescription_validity/", {
-          valid_till_days: days,
-          appointment_id: data.appointment.appointment_id,
-        })
-        .then((res) => res.data),
-    onSuccess: () => {
-      showToast("Validity added successfully.", "success");
-      refetchPrescription();
-      setNotes("");
-    },
-    onError: () => {
-      showToast("Failed to add validity. Try again", "error");
-    },
-  });
 
   return (
     <div className="p-6">
       <div className="mb-8">
         <div className="flex flex-col gap-6 mb-6">
           <div className="flex items-center gap-2">
-            <h3 className="text-xl font-semibold text-[#2d1335]">
-              Add New Prescription
-            </h3>
+            {data.is_prescription_allowed ? (
+              <h3 className="text-xl font-semibold text-[#2d1335]">
+                Add New Prescription
+              </h3>
+            ) : (
+              <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                <ClipboardEdit className="h-5 w-5 text-[#582768] mr-2" />
+                Specialist's Notes
+                <span className="text-red-500 ml-1">*</span>
+              </h3>
+            )}
           </div>
         </div>
 
@@ -422,7 +380,28 @@ const PrescriptionForm = ({
                 )}
               </div>
             </div>
-
+            <div className="grid grid-cols-1 md:grid-cols-3 ">
+              <div className="flex flex-col w-full">
+                <label className="text-sm font-semibold text-gray-800 mb-2">
+                 Validity of prescription
+                </label>
+                <input
+                  type="number"
+                  name="validity"
+                  value={prescription.validity}
+                  onChange={handleChange}
+                  placeholder="Eg. 90 days"
+                  className={`w-full no-arrows rounded-md  border text-sm px-3 py-2 transition focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                    errors2.validity ? "border-red-500" : "border-gray-300"
+                  } `}
+                />
+                {errors2.validity && (
+                  <p className="text-xs text-red-500 mt-1">
+                    {errors2.validity}
+                  </p>
+                )}
+              </div>
+            </div>
             <div className="w-full flex justify-end">
               <button
                 type="button"
@@ -435,52 +414,6 @@ const PrescriptionForm = ({
             </div>
           </div>
         )}
-
-        {data.is_prescription_allowed &&
-          !prescriptionData?.prescription_validity_added && (
-            <div className="w-full max-w-md mt-4">
-              <label
-                htmlFor="prescription_validity"
-                className="text-sm font-medium text-gray-700 mb-2 flex items-center"
-              >
-                <CalendarCheck className="h-4 w-4 mr-2 text-indigo-500" />
-                Prescription Validity
-              </label>
-
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  id="prescription_validity"
-                  type="number"
-                  placeholder="Eg. 90 days"
-                  value={validityDays}
-                  onChange={(e) =>
-                    setValidityDays(
-                      e.target.value === "" ? "" : Number(e.target.value)
-                    )
-                  }
-                  className="flex-1 border rounded-lg no-arrows border-gray-200 shadow-sm outline-0 focus:border-indigo-300 focus:ring focus:ring-indigo-200/50 px-4 py-2.5 transition-all text-gray-800 placeholder-gray-400"
-                />
-                <button
-                  onClick={() => {
-                    if (validityDays && validityDays > 0) {
-                      add_prescription_validity.mutate(validityDays);
-                    } else {
-                      showToast("Enter a valid number of days", "error");
-                    }
-                  }}
-                  type="button"
-                  className="inline-flex cursor-pointer items-center justify-center px-4 py-2.5 rounded-lg bg-[#582768] text-white text-sm font-medium shadow-sm  transition"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add
-                </button>
-              </div>
-
-              <p className="mt-2 text-xs text-gray-500">
-                Specify how long the prescription remains valid.
-              </p>
-            </div>
-          )}
 
         {data.is_prescription_allowed && (
           <>
@@ -592,11 +525,13 @@ const PrescriptionForm = ({
           {/* Header */}
           <div className="p-5 border-b border-gray-100 flex justify-between items-center">
             <div>
-              <h3 className="text-lg font-semibold text-gray-800 flex items-center">
-                <ClipboardEdit className="h-5 w-5 text-[#582768] mr-2" />
-                Specialist's Notes
-                <span className="text-red-500 ml-1">*</span>
-              </h3>
+              {data.is_prescription_allowed && (
+                <h3 className="text-lg font-semibold text-gray-800 flex items-center">
+                  <ClipboardEdit className="h-5 w-5 text-[#582768] mr-2" />
+                  Specialist's Notes
+                  <span className="text-red-500 ml-1">*</span>
+                </h3>
+              )}
               <p className="text-sm text-gray-600 mt-1">
                 <strong className="text-[#582768]">Note:</strong> This message
                 will be visible to the patient. Please provide clear and concise
@@ -713,18 +648,6 @@ const PrescriptionForm = ({
           </AnimatePresence>
         </div>
       </div>
-
-      {prescriptionData &&
-        (prescriptionData?.tests?.length > 0 ||
-          prescriptionData?.medicine?.length > 0 ||
-          prescriptionData?.followup_advices?.length > 0) && (
-          <PrescriptionPreview
-            prescription={prescriptionData}
-            onSelectItem={(id: number) => {
-              deactivate_medicine.mutate(id);
-            }}
-          />
-        )}
     </div>
   );
 };

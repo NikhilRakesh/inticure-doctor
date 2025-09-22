@@ -29,6 +29,7 @@ interface Test {
 
 interface Medicine {
   id: number;
+  doctor_id: number;
   created_at: string;
   updated_at: string;
   instruction: string;
@@ -73,8 +74,9 @@ interface MedicalData {
 
 const PrescriptionPreview: React.FC<{
   prescription: MedicalData;
+  doctor_id: number;
   onSelectItem: (id: number) => void;
-}> = ({ prescription, onSelectItem }) => {
+}> = ({ prescription, onSelectItem, doctor_id }) => {
   const [showActiveMeds, setShowActiveMeds] = useState<boolean>(true);
 
   if (!prescription) return null;
@@ -99,7 +101,9 @@ const PrescriptionPreview: React.FC<{
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
         <div>
-          <h3 className="text-2xl font-bold text-gray-900">Prescription</h3>
+          <h3 className="text-2xl font-bold text-gray-900">
+            Prescription History
+          </h3>
           <p className="text-gray-600 mt-1">
             Patient:{" "}
             <span className="font-medium">
@@ -175,13 +179,15 @@ const PrescriptionPreview: React.FC<{
                       </h5>
                       <p className="text-gray-600 text-sm">{med.strength}</p>
                     </div>
-                    <button
-                      onClick={() => onSelectItem(med.id)}
-                      className="flex items-center gap-1 text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition-colors"
-                    >
-                      <CheckCircle className="h-3 w-3" />
-                      Mark Inactive
-                    </button>
+                    {doctor_id === med.doctor_id && (
+                      <button
+                        onClick={() => onSelectItem(med.id)}
+                        className="flex items-center gap-1 text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded-full hover:bg-indigo-200 transition-colors"
+                      >
+                        <CheckCircle className="h-3 w-3" />
+                        Mark Inactive
+                      </button>
+                    )}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                     <InfoBox label="Dosage" value={med.dosage} />
