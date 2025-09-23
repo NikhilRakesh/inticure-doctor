@@ -81,6 +81,7 @@ const DoctorCalendarGrid: React.FC = () => {
   const [draftSlots, setDraftSlots] = useState<DraftSlot[]>([]);
   const [dragStart, setDragStart] = useState<Date | null>(null);
   const [dragEnd, setDragEnd] = useState<Date | null>(null);
+  const [minHrInSEc, setMinHrInSEc] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const { showToast } = useToast();
   const [currentWeeks, setCurrentWeeks] = useState<Date[]>(() =>
@@ -96,7 +97,10 @@ const DoctorCalendarGrid: React.FC = () => {
     queryFn: () =>
       token_api(authToken)
         .get("doctor/available_dates/")
-        .then((r) => r.data.available_dates),
+        .then((r) => {
+          setMinHrInSEc(r.data.doctor_max_session_duration);
+          return r.data.available_dates;
+        }),
   });
 
   function formatDate(date: Date): string {
@@ -424,7 +428,12 @@ const DoctorCalendarGrid: React.FC = () => {
                             boxShadow: "0 4px 14px rgba(106, 27, 120, 0.2)",
                           }}
                           onClick={() =>
-                            handleEditWorkHour(s, e, slot.date, slot.start_date_time)
+                            handleEditWorkHour(
+                              s,
+                              e,
+                              slot.date,
+                              slot.start_date_time
+                            )
                           }
                           initial={{ opacity: 0, scale: 0.96 }}
                           animate={{ opacity: 1, scale: 1 }}
@@ -471,6 +480,7 @@ const DoctorCalendarGrid: React.FC = () => {
       <AnimatePresence>
         {modalOpen && (
           <EventModal
+            minHrInSEc={minHrInSEc}
             initialRange={modalRange}
             selectedSlots={selectedSlots}
             onClose={() => {

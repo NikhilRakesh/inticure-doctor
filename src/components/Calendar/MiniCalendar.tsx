@@ -3,6 +3,7 @@ import {
   eachDayOfInterval,
   endOfMonth,
   format,
+  getDay,
   isBefore,
   isSameDay,
   isSameMonth,
@@ -17,17 +18,16 @@ import { motion } from "framer-motion";
 
 type Range = { start: Date; end: Date };
 
-// Using Inticure brand colors from guidelines
 const COLORS = {
-  primary: "#6A1B78",       // Main brand purple
-  secondary: "#D41060",     // Brand pink
-  dark: "#3A3A3B",          // Dark gray
-  black: "#000000",         // Black
-  accent1: "#C2D510",       // Lime green
-  accent2: "#2C1879",       // Deep blue
-  accent3: "#29791B",       // Forest green
-  lightBg: "#F0E8F2",       // Light tint of primary
-  white: "#FFFFFF",         // White
+  primary: "#6A1B78",
+  secondary: "#D41060",
+  dark: "#3A3A3B",
+  black: "#000000",
+  accent1: "#C2D510",
+  accent2: "#2C1879",
+  accent3: "#29791B",
+  lightBg: "#F0E8F2",
+  white: "#FFFFFF",
 };
 
 const MiniCalendar: React.FC<{
@@ -53,12 +53,16 @@ const MiniCalendar: React.FC<{
     () => eachDayOfInterval({ start: monthStart, end: monthEnd }),
     [monthStart, monthEnd]
   );
+  const leadingEmptyDays = useMemo(() => {
+    const dayOfWeek = getDay(monthStart);
+    return Array.from({ length: dayOfWeek });
+  }, [monthStart]);
 
   const [dragging, setDragging] = useState<{
     start: Date | null;
     end: Date | null;
   }>({ start: null, end: null });
-  
+
   const isPast = (d: Date) => isBefore(d, startOfDay(new Date()));
   const isWorking = (d: Date) => workingDays.includes(format(d, "yyyy-MM-dd"));
 
@@ -75,7 +79,7 @@ const MiniCalendar: React.FC<{
       setDragging({ start: dragging.start, end: d });
     }
   };
-  
+
   const cn = (...arr: (string | false | undefined)[]) =>
     arr.filter(Boolean).join(" ");
 
@@ -96,6 +100,8 @@ const MiniCalendar: React.FC<{
     return target >= start && target <= end;
   };
 
+  console.log("monthStart:", monthStart, "monthEnd:", monthEnd);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -109,8 +115,14 @@ const MiniCalendar: React.FC<{
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 rounded-lg" style={{ backgroundColor: COLORS.lightBg }}>
-            <CalendarIcon className="h-4 w-4" style={{ color: COLORS.primary }} />
+          <div
+            className="p-2 rounded-lg"
+            style={{ backgroundColor: COLORS.lightBg }}
+          >
+            <CalendarIcon
+              className="h-4 w-4"
+              style={{ color: COLORS.primary }}
+            />
           </div>
           <h3 className="text-lg font-semibold" style={{ color: COLORS.dark }}>
             {format(currentMonth, "MMMM yyyy")}
@@ -138,8 +150,11 @@ const MiniCalendar: React.FC<{
       </div>
 
       {/* Day headers */}
-      <div className="grid grid-cols-7 text-sm font-medium mb-3" style={{ color: COLORS.dark }}>
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d,index) => (
+      <div
+        className="grid grid-cols-7 text-sm font-medium mb-3"
+        style={{ color: COLORS.dark }}
+      >
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d, index) => (
           <div key={index} className="text-center py-1">
             {d}
           </div>
@@ -148,7 +163,11 @@ const MiniCalendar: React.FC<{
 
       {/* Calendar grid */}
       <div className="grid grid-cols-7 gap-1">
-        {monthDays.map((day,index) => {
+        {leadingEmptyDays.map((_, index) => (
+          <div key={`empty-${index}`} />
+        ))}
+
+        {monthDays.map((day, index) => {
           const disabled = isPast(day);
           const selected = isSameDay(day, selectedDate);
           const outOfMonth = !isSameMonth(day, monthStart);
@@ -195,13 +214,13 @@ const MiniCalendar: React.FC<{
                   : inRange
                   ? `${COLORS.primary}22`
                   : "transparent",
-                color: selected 
-                  ? "white" 
-                  : outOfMonth 
-                  ? "#D1D5DB" 
+                color: selected
+                  ? "white"
+                  : outOfMonth
+                  ? "#D1D5DB"
                   : COLORS.dark,
-                boxShadow: selected 
-                  ? `0 4px 12px ${COLORS.primary}40` 
+                boxShadow: selected
+                  ? `0 4px 12px ${COLORS.primary}40`
                   : undefined,
               }}
               aria-pressed={selected}
@@ -220,9 +239,9 @@ const MiniCalendar: React.FC<{
               {work && !selected && !disabled && !outOfMonth && (
                 <span
                   className="absolute inset-0 rounded-full pointer-events-none"
-                  style={{ 
+                  style={{
                     boxShadow: `0 0 0 1px ${COLORS.secondary}33`,
-                    backgroundColor: `${COLORS.secondary}08`
+                    backgroundColor: `${COLORS.secondary}08`,
                   }}
                   aria-hidden
                 />
@@ -235,7 +254,10 @@ const MiniCalendar: React.FC<{
       {/* Legend */}
       <div className="mt-4 pt-3 border-t border-gray-100 flex justify-center items-center gap-4 text-xs">
         <div className="flex items-center gap-1.5">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.secondary }}></div>
+          <div
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: COLORS.secondary }}
+          ></div>
           <span style={{ color: COLORS.dark }}>Available</span>
         </div>
         <div className="flex items-center gap-1.5">

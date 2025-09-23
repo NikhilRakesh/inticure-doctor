@@ -26,7 +26,7 @@ import {
 import { useToast } from "../context/ToastProvider";
 import { PreviousNotesModal } from "../components/Appointment/PreviousNotesModal";
 import { WarningModal } from "../components/Appointment/WarningModal";
-import { isAfter, isBefore, subHours } from "date-fns";
+import { isAfter } from "date-fns";
 import BackButton from "../components/Common/BackButton";
 import { CompleteAppointmentModal } from "../components/Appointment/CompleteAppointmentModal";
 import { motion } from "framer-motion";
@@ -102,6 +102,7 @@ interface Appointment {
   language_pref: string;
   gender_pref: string;
   meeting_link: string | null;
+  doctor_meeting_link: string | null;
   payment_done: boolean;
   is_free: boolean;
   prescription: string | null;
@@ -818,21 +819,22 @@ const DoctorPatientAssessment = () => {
       return;
     }
     const now: Date = new Date();
-    const appointmentDateTime = new Date(
-      `${data.appointment.appointment_date}T${data.appointment.start_time}`
+    const appointmentDateTime = new Date(data.appointment.start_time);
+    console.log(
+      now,
+      appointmentDateTime,
+      isAfter(now, appointmentDateTime),
+      data.appointment.doctor_meeting_link
     );
 
-    const oneHourBefore = subHours(appointmentDateTime, 1);
-
     if (
-      isAfter(now, oneHourBefore) &&
-      isBefore(now, appointmentDateTime) &&
-      data.appointment.meeting_link
+      isAfter(now, appointmentDateTime) &&
+      data.appointment.doctor_meeting_link
     ) {
-      window.open(data.appointment.meeting_link, "_blank");
+      window.open(data.appointment.doctor_meeting_link, "_blank");
     } else {
       showToast(
-        "The consultation link will be available 1 hour before your appointment.",
+        "You can only join the consultation at the scheduled time.",
         "error"
       );
     }
@@ -1373,6 +1375,7 @@ const DoctorPatientAssessment = () => {
               submitClinicalNotes={submitClinicalNotes}
             />
           )}
+
           {activeTab === "assessment" && data && (
             <PatientAssessmentForm
               data={data}

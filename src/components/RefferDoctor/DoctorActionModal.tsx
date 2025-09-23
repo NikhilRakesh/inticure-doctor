@@ -107,6 +107,7 @@ export const DoctorActionModal = ({
           doctor_id: doctor.id,
           date: selectedDate,
           appointment_id,
+          specialization_id: selectedSpecialization,
         })
         .then((res) => res.data.slots);
     },

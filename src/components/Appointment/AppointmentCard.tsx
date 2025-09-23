@@ -99,13 +99,11 @@ const AppointmentCard = ({ appointment }: AppointmentCardProbs) => {
   };
 
   function format24HourTimeTo12Hour(time24: string): string {
-    const [hourStr, minuteStr] = time24.split(":");
-    let hours = parseInt(hourStr, 10);
-
-    const meridian = hours >= 12 ? "PM" : "AM";
-    hours = hours % 12 || 12; 
-
-    return `${hours}:${minuteStr} ${meridian}`;
+   return new Date(time24).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
   }
 
   return (

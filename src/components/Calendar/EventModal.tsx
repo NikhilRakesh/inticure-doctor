@@ -5,7 +5,7 @@ import {
   eachDayOfInterval,
   isSameDay,
 } from "date-fns";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const COLORS = {
@@ -29,6 +29,7 @@ type TimeSlotApi = {
 };
 
 const EventModal: React.FC<{
+  minHrInSEc?: string | null;
   initialRange: Range | null;
   selectedSlots: TimeSlotApi[];
   onClose: () => void;
@@ -37,7 +38,7 @@ const EventModal: React.FC<{
     start_time: string;
     end_time: string;
   }) => void;
-}> = ({ initialRange,selectedSlots, onClose, onSave }) => {
+}> = ({ initialRange, selectedSlots, onClose, onSave, minHrInSEc }) => {
   const start = initialRange?.start ?? new Date();
   const end = initialRange?.end ?? addDays(start, 0);
 
@@ -52,6 +53,7 @@ const EventModal: React.FC<{
 
   useEffect(() => {
     setStartDate(start);
+    console.log(selectedSlots);
     setStartTime(formatTo12Hour(start));
     setEndTime(formatTo12Hour(end));
     setEndDate(initialRange ? end : "");
@@ -59,8 +61,7 @@ const EventModal: React.FC<{
     setIsRecurring(initialRange ? !isSameDay(start, end) : false);
   }, []);
 
-  console.log(selectedSlots);
-  
+  console.log(startTime, endTime);
 
   function generate15MinTimes12Hour(): string[] {
     const times: string[] = [];
@@ -126,6 +127,41 @@ const EventModal: React.FC<{
     onClose();
   };
 
+  function hasMinimumDuration(
+    start: Date,
+    end: Date,
+    minHrInSec: string | null | undefined
+  ): boolean {
+    if (!minHrInSec) return false;
+    const minSec = parseFloat(minHrInSec);
+    if (isNaN(minSec)) {
+      console.error("Invalid minHrInSec:", minHrInSec);
+      return false;
+    }
+
+    const diffInSec = (end.getTime() - start.getTime()) / 1000;
+    return diffInSec >= minSec;
+  }
+
+  function createDateWithTime(baseDate: Date, timeStr: string): Date {
+    const [time, modifier] = timeStr.split(" ");
+    let [hours, minutes] = time.split(":").map(Number);
+
+    if (modifier === "PM" && hours !== 12) hours += 12;
+    if (modifier === "AM" && hours === 12) hours = 0;
+
+    const newDate = new Date(baseDate);
+    newDate.setHours(hours, minutes, 0, 0);
+
+    return newDate;
+  }
+  const today = new Date();
+  const startOFSec = createDateWithTime(today, startTime);
+  const endOfSec = createDateWithTime(today, endTime);
+  const validDuration = React.useMemo(() => {
+    return hasMinimumDuration(startOFSec, endOfSec, minHrInSEc);
+  }, [startOFSec, endOfSec, startTime, endTime, minHrInSEc]);
+
   return (
     <AnimatePresence>
       <div
@@ -163,6 +199,13 @@ const EventModal: React.FC<{
 
           {/* Body */}
           <div className="p-6">
+            {minHrInSEc && !validDuration && (
+              <p className="text-sm text-red-600 py-2">
+                The selected time range must be at least{" "}
+                {Math.floor(parseFloat(minHrInSEc) / 60)} minutes.
+              </p>
+            )}
+
             {/* Recurring Toggle */}
             <div className="flex items-center justify-between mb-6 p-3 rounded-lg bg-gray-50">
               <div>
@@ -173,6 +216,7 @@ const EventModal: React.FC<{
                   Set availability for a date range
                 </p>
               </div>
+
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -302,8 +346,14 @@ const EventModal: React.FC<{
               </button>
               <button
                 onClick={handleSave}
-                className="px-6 py-3 rounded-xl cursor-pointer text-white font-medium transition-colors hover:opacity-90 shadow-md"
-                style={{ backgroundColor: COLORS.primary }}
+                disabled={!validDuration}
+                className={`px-6 py-3 rounded-xl text-white font-medium transition-colors shadow-md
+    ${
+      validDuration
+        ? "bg-[#6A1B78] cursor-pointer hover:opacity-90"
+        : "bg-gray-400 cursor-not-allowed"
+    }
+  `}
                 aria-label="Save Availability"
               >
                 Save Availability
