@@ -3,8 +3,8 @@ import {
   Calendar,
   DollarSign,
   User,
-  Bell,
   ChevronRight,
+  Pencil,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { token_api } from "../lib/api";
@@ -13,6 +13,8 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import DashboardLoading from "../components/Skelton/DashboardLoading";
 import AppointmentCard from "../components/Appointment/AppointmentCard";
+import { useState } from "react";
+import { EditDoctorProfileModal } from "../components/Dashboard/EditDoctorProfileModal";
 
 interface DashboardData {
   earnings_today: number;
@@ -26,7 +28,13 @@ interface DashboardData {
     name: string;
     specialization: string;
     experience: string;
+    profile_pic: string;
+    email: string;
+    bio: string;
     rating: number;
+    salutaion: string;
+    first_name: string;
+    last_name: string;
   };
   upcoming_appointments: Appointment[];
 }
@@ -47,8 +55,13 @@ interface Appointment {
 const Dashboard = () => {
   const accessToken = useAuthStore((state) => state.accessToken);
   const navigate = useNavigate();
+  const [showEditModal, setShowEditModal] = useState(false);
 
-  const { data: dashBoardData, isLoading } = useQuery<DashboardData>({
+  const {
+    data: dashBoardData,
+    isLoading,
+    refetch,
+  } = useQuery<DashboardData>({
     queryKey: ["available-hours"],
     queryFn: () => {
       return token_api(accessToken)
@@ -68,9 +81,15 @@ const Dashboard = () => {
             Welcome back, {dashBoardData?.doctor_info?.name}
           </p>
         </div>
-        <button className="p-2 rounded-full bg-white shadow-sm hover:bg-gray-100">
-          <Bell className="h-5 w-5 text-gray-600" />
-        </button>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => setShowEditModal(true)}
+          className="flex cursor-pointer items-center gap-2 px-4 py-2 bg-[#582768] text-white rounded-lg shadow-sm hover:bg-[#6b2f85] transition-all"
+        >
+          <Pencil className="h-4 w-4" />
+          <span className="text-sm font-medium">Edit Profile</span>
+        </motion.button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -211,6 +230,15 @@ const Dashboard = () => {
           )}
         </div>
       </div>
+      {showEditModal && dashBoardData && (
+        <EditDoctorProfileModal
+          doctorInfo={dashBoardData?.doctor_info}
+          onClose={() => {
+            setShowEditModal(false);
+            refetch();
+          }}
+        />
+      )}
     </div>
   );
 };
